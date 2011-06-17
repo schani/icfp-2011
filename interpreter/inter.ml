@@ -4,7 +4,7 @@ type cards = | I | Zero | Succ | Dbl | Get | Put | S | K
 *)
 open Cards
   
-		 
+(*		 
 type skiexpr = 
   | Card of cards
   | Num of int
@@ -18,7 +18,7 @@ type skiexpr =
   | HelpI of skiexpr
   | HelpIJ of (skiexpr * skiexpr)
   | ZombieI of skiexpr
-
+*)
 type liveness = Dead | Alive
 	
 type 'world intercontext = {life: liveness;
@@ -259,8 +259,6 @@ let rec inter context world expr =
     error context "inter: badInsn" world
 
 
-type slot = int * skiexpr
-type default_world_type = (slot array)*(slot array)
 exception InterError of (string * default_world_type)
     
 let create_default_world () = 
