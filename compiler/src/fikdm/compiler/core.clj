@@ -8,18 +8,18 @@
   (cond-match expr
 
 	      [?M ?N]
-	      (list (list 'S (compile-a x M)) (compile-a x N))
+	      (list (list :S (compile-a x M)) (compile-a x N))
 
 	      ?y
 	      (if (= x y)
-		'I
-		(list 'K y))))
+		:I
+		(list :K y))))
 
 (defn compile-lambda [expr]
   (cond-match expr
 
 	      [?lambda [?x] ?M]
-	      (if (= lambda 'fn)
+	      (if (= lambda :fn)
 		(compile-a x (compile-lambda M))
 		(throw (Exception. (str "Not a valid expression: " expr))))
 
@@ -34,8 +34,8 @@
     (let [ski (map optimize-ski ski)]
       (or
        (if-match [[[?S [?K ?L]] [?M ?x]] ski]
-		 (if (and (= S 'S) (= K 'K) (= L 'K) (= M 'K))
-		   `(K (K ~x))))
+		 (if (and (= S :S) (= K :K) (= L :K) (= M :K))
+		   `(:K (:K ~x))))
        ski))
     ski))
 
@@ -58,16 +58,16 @@
     [slot (difference free #{slot})]))
 
 (defn- primitive-card? [x]
-  (cond (symbol? x)
+  (cond (keyword? x)
 	x
 	(= x 0)
-	'zero))
+	:zero))
 
 (defn- gen-primitive? [x s]
   (if-let [card (primitive-card? x)]
-    (if (= card 'I)
-      [[:left s 'put]]
-      [[:left s 'put]
+    (if (= card :I)
+      [[:left s :put]]
+      [[:left s :put]
        [:right s card]])))
 
 (defn- highest-bit [x]
@@ -84,11 +84,11 @@
 	   i highest]
       (if (>= i 0)
 	(let [add (if (bit-test x i)
-		    [[:left s 'succ]]
+		    [[:left s :succ]]
 		    [])
 	      shift (if (zero? i)
 		      []
-		      [[:left s 'dbl]])]
+		      [[:left s :dbl]])]
 	  (recur (concat code add shift)
 		 (dec i)))
 	code))))
@@ -113,8 +113,8 @@
   (concat
    x-code
    y-code
-   [[:left s 'K]
-    [:left s 'S]
+   [[:left s :K]
+    [:left s :S]
     [:right s m-card]
     [:right s n-card]]))
 
@@ -126,8 +126,8 @@
     (generate-mn s x-code
 		 (concat (generate y os os-free)
 			 (generate os 0 nil)
-			 [[:left 0 'get]])
-		 'get 'zero)))
+			 [[:left 0 :get]])
+		 :get :zero)))
 
 (defn generate [ski s free]
   (assert (not (contains? free s)))
@@ -141,7 +141,7 @@
 			    n-card (primitive-card? N)]
 			   (generate-mn s x-code [] m-card n-card)
 			   (if-let [y-simple (gen-simple? [M N] 0)]
-			     (generate-mn s x-code y-simple 'get 'zero)
+			     (generate-mn s x-code y-simple :get :zero)
 			     (generate-complex s free x-code [M N]))))
 
 		[?x ?y]
@@ -166,9 +166,8 @@
 			     commands)))))
 
 (defn make-loop [side-effect]
-  (let [fn 'fn]
-    `(((S I) I)
-      (~fn [f]
-	((~fn [y]
-	   (((S I) I) f))
-	 ~side-effect)))))
+  `(((:S :I) :I)
+    (:fn [f#]
+	 ((:fn [y#]
+	    (((:S :I) :I) f#))
+	  ~side-effect))))
