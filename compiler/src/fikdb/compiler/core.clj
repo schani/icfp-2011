@@ -1,6 +1,7 @@
 (ns fikdm.compiler.core
   (:use matchure
-	clojure.contrib.def))
+	clojure.contrib.def
+	clojure.contrib.str-utils))
 
 (defn compile-a [x expr]
   (cond-match expr
@@ -114,9 +115,20 @@
 		?x
 		(throw (Exception. (str "Malformed SKI " x))))))
 
-;; endless loop
-;(compile-lambda '(((S I) I)
-;		  (fn [f]
-;		    ((fn [y]
-;		       (((S I) I) f))
-;		     :boes))))
+(defn- command-str [command]
+  (let [[side slot card] command]
+    (case side
+	  :left (str "1\n" (name card) "\n" slot "\n")
+	  :right (str "2\n" slot "\n" (name card) "\n")
+	  (throw (Exception. (str "Malformed command " command))))))
+
+(defn- commands-str [commands]
+  (apply str (map command-str commands)))
+
+(defn make-loop [side-effect]
+  (let [fn 'fn]
+    `(((S I) I)
+      (~fn [f]
+	((~fn [y]
+	   (((S I) I) f))
+	 ~side-effect)))))
