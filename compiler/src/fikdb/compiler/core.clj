@@ -60,19 +60,44 @@
       [[:left s 'put]
        [:right s card]])))
 
+(defn- highest-bit [x]
+  (loop [bit 1
+	 i 0]
+    (if (> bit x)
+      (dec i)
+      (recur (bit-shift-left bit 1) (inc i)))))
+
+(defn- gen-number [x s]
+  (assert (and (number? x) (>= x 0)))
+  (let [highest (highest-bit x)]
+    (loop [code (gen-primitive? 0 s)
+	   i highest]
+      (if (>= i 0)
+	(let [add (if (bit-test x i)
+		    [[:left s 'succ]]
+		    [])
+	      shift (if (zero? i)
+		      []
+		      [[:left s 'dbl]])]
+	  (recur (concat code add shift)
+		 (dec i)))
+	code))))
+
 (defn- gen-simple? [x s]
   (if-let [primitive (gen-primitive? x s)]
     primitive
-    (if-match [[?l ?r] x]
-	      (if-lets [l-card (primitive-card? l)
-			r-gen (gen-simple? r s)]
-		       (concat r-gen
-			       [[:left s l-card]])
-		       (if-lets [r-card (primitive-card? r)
-				 l-gen (gen-simple? l s)]
-				(concat l-gen
-					[[:right s r-card]])
-				nil)))))
+    (if (number? x)
+      (gen-number x s)
+      (if-match [[?l ?r] x]
+		(if-lets [l-card (primitive-card? l)
+			  r-gen (gen-simple? r s)]
+			 (concat r-gen
+				 [[:left s l-card]])
+			 (if-lets [r-card (primitive-card? r)
+				   l-gen (gen-simple? l s)]
+				  (concat l-gen
+					  [[:right s r-card]])
+				  nil))))))
 
 (defn- generate-mn [s x-code y-code m-card n-card]
   (concat
@@ -111,11 +136,6 @@
 
 		[?x ?y]
 		(generate-complex s free (generate x s free) y)
-
-		(number? ?)
-		(concat
-		 (generate (dec ski) s nil)
-		 [[:left s 'succ]])
 
 		?x
 		(throw (Exception. (str "Malformed SKI " x))))))
