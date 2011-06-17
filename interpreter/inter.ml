@@ -245,7 +245,6 @@ let rec inter context world = function
     error context "inter: badInsn" world
 
 
-
 type slot = int * skiexpr
 type default_world_type = (slot array)*(slot array)
 exception InterError of (string * default_world_type)
@@ -275,8 +274,8 @@ let default_context =
     read_other_field = (fun i w -> (get field other i w));
     write_own_vit = (fun i vit w -> (set rvit own i vit w));
     write_other_vit = (fun i vit w -> (set rvit other i vit w));
-    write_own_field = (fun i vit w -> (set rfield own i vit w));
-    write_other_field = (fun i vit w -> (set rfield other i vit w));
+    write_own_field = (fun i field w -> (set rfield own i field w));
+    write_other_field = (fun i field w -> (set rfield other i field w));
     error = (fun msg w -> raise (InterError(msg,w)));
     end_move = function p1,p2 -> p2,p1
     }
