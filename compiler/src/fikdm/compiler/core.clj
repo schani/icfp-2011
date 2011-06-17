@@ -70,28 +70,19 @@
       [[:left s :put]
        [:right s card]])))
 
-(defn- highest-bit [x]
-  (loop [bit 1
-	 i 0]
-    (if (> bit x)
-      (dec i)
-      (recur (bit-shift-left bit 1) (inc i)))))
-
 (defn- gen-number [x s]
   (assert (and (number? x) (>= x 0)))
-  (let [highest (highest-bit x)]
-    (loop [code (gen-primitive? 0 s)
-	   i highest]
-      (if (>= i 0)
-	(let [add (if (bit-test x i)
-		    [[:left s :succ]]
-		    [])
-	      shift (if (zero? i)
-		      []
-		      [[:left s :dbl]])]
-	  (recur (concat code add shift)
-		 (dec i)))
-	code))))
+  (if-let [primitive (gen-primitive? x s)]
+    primitive
+    (let [smaller (bit-shift-right x 1)]
+      (concat
+       (gen-number smaller s)
+       (if (zero? smaller)
+	 []
+	 [[:left s :dbl]])
+       (if (bit-test x 0)
+	 [[:left s :succ]]
+	 [])))))
 
 (defn- gen-simple? [x s]
   (if-let [primitive (gen-primitive? x s)]
