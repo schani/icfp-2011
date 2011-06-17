@@ -1,6 +1,8 @@
-
+(*
 type cards = | I | Zero | Succ | Dbl | Get | Put | S | K 
 	     | Inc | Dec | Attack | Help | Copy | Revive | Zombie 
+*)
+open Cards
   
 		 
 type skiexpr = 
@@ -29,6 +31,8 @@ type 'world intercontext = {life: liveness;
 			    write_other_vit: int -> int -> 'world -> 'world;
 			    write_own_field: int -> skiexpr -> 'world -> 'world;
 			    write_other_field: int -> skiexpr -> 'world -> 'world;
+			    count_alive_own: 'world -> (int * 'world);
+			    count_alive_other: 'world -> (int * 'world);
 			    error: string -> 'world -> unit;
 			    end_move: 'world -> 'world;
 			   } 
@@ -87,6 +91,7 @@ let isslot = function
   | _ -> false
 
 let isalive x = (x > 0)
+let iszombie x = (x == -1)
 
 let incrdepth c = 
   let d = c.depth + 1 in
@@ -276,6 +281,21 @@ let default_context =
     ((Array.set (which w) i (what value (Array.get (which w) i))); w) 
   in
 
+  let count_alive which world = 
+    let rec loop i acc = 
+      let i = i + 1 in
+      if i >= 256 then
+	acc
+      else
+	let vit,_ = get vit which i world in
+	if isalive vit then
+	  loop i (acc + 1)
+	else
+	  loop i acc
+    in
+    (loop 0 0),world
+  in
+
   { life = Alive;
     depth = 0;
     read_own_vit = (fun i w -> (get vit own i w));
@@ -286,30 +306,90 @@ let default_context =
     write_other_vit = (fun i vit w -> (set rvit other i vit w));
     write_own_field = (fun i field w -> (set rfield own i field w));
     write_other_field = (fun i field w -> (set rfield other i field w));
+    count_alive_own = (count_alive own);
+    count_alive_other = (count_alive own);
     error = (fun msg w -> raise (InterError(msg,w)));
-    end_move = function p1,p2 -> p2,p1
+    end_move = (function p1,p2 -> p2,p1);
     }
   
-type application_direction = Left | Right
-
-let apply_move dir slot card world context = 
+let movegetslot = function 
+  | Left(_,slot) -> slot 
+  | Right(slot,_) -> slot 
+    
+let apply_move move world context = 
+  let slot = movegetslot move in 
   let vit,world = context.read_own_vit slot world in
   try 
     if isalive vit then
       let field,world = context.read_own_field slot world in
-      let expr = match dir with 
-	| Left -> Lambda(Card(card),field)
-	| Right -> Lambda(field,Card(card))
+      let expr = match move with 
+	| Left(card,_) -> Lambda(Card(card),field)
+	| Right(_,card) -> Lambda(field,Card(card))
       in
       let field,world = inter {context with life = Alive; depth = 0} world expr in
       context.write_own_field slot field world 
     else
-      context.error "apply: not alive" world
-  with InterError(msg,w) as e -> 
-    context.write_own_field slot (Card I) world;
-    raise e 
+      (context.error "apply: not alive" world; (* assert false; *) world)
+  with InterError(msg,w) -> 
+    context.write_own_field slot (Card I) world
 
+let apply_zombies world context = 
+  let rec loop i world = 
+    let vit,world = context.read_own_vit i world in
+    let world = 
+      if iszombie vit then
+	let field,world = context.read_own_field i world in
+	try 
+	  let _,world = inter {context with life = Dead; depth = 0} world field in
+	  world
+	with InterError(msg,w) ->
+	  w
+      else
+	world
+    in
+    if i = 255 then
+      world
+    else
+      loop (i+1) world
+  in loop 0 world
+      
+let apply_player context world player = 
+  let dir,slot,card = player () in
+  let world = apply_zombies world context in
+  let world = apply_move dir slot card world context in 
+  let count,world = context.count_alive_own world in
+  let world = context.end_move world in
+  count,world
 
+let play_game context world player0 player1 = 
+  let winner world = 
+    let count0 = context.count_alive_own world in
+    let count1 = context.count_alive_other world in
+    let winner = 
+      if count0 > count1 then
+	0 
+      else if count1 > count0 then
+	1
+      else
+	-1
+    in
+    winner,world
+  in
+  let rec loop i world = 
+    if i >= 100000 then
+      winner world
+    else
+      let count,world = apply_player context world player0 in
+      if count = 0 then
+	1,world
+      else
+	let count,world = apply_player context world player1 in
+	if count = 0 then 
+	  0,world
+	else
+	  loop (i+1) world
+  in
+  loop 0 world
   
     
-  
+
