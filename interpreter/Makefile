@@ -8,7 +8,7 @@ SRCFILES = $(shell echo *.ml *.mli *.mll *.mly) Makefile Makefile.ocaml
 DISTFILES = $(DOCFILES) $(OTHERFILES) $(SRCFILES)
 DISTVERSIONFILES =
 MODULES = cards parser printer inter
-LIBRARIES = 
+LIBRARIES = str unix
 DISTVERSION = $(shell cat VERSION)
 #VARIANT=.profile
 
