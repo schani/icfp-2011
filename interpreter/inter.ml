@@ -263,9 +263,9 @@ type slot = int * skiexpr
 type default_world_type = (slot array)*(slot array)
 exception InterError of (string * default_world_type)
     
-let create_world () = 
-  let player0 = Array.make 256 10000,Card(I) in
-  let player1 = Array.make 256 10000,Card(I) in
+let create_default_world () = 
+  let player0 = Array.make 256 (10000,Card(I)) in
+  let player1 = Array.make 256 (10000,Card(I)) in
   player0,player1
     
 
@@ -354,9 +354,9 @@ let apply_zombies world context =
   in loop 0 world
       
 let apply_player context world player = 
-  let dir,slot,card = player () in
+  let move = player () in
   let world = apply_zombies world context in
-  let world = apply_move dir slot card world context in 
+  let world = apply_move move world context in 
   let count,world = context.count_alive_own world in
   let world = context.end_move world in
   count,world

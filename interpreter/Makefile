@@ -1,5 +1,5 @@
 DISTNAME = inter
-BINFILES = inter
+BINFILES = tester
 SBINFILES =
 LIBFILES =
 DOCFILES = COPYING LICENSE CHANGELOG VERSION 
@@ -7,7 +7,7 @@ OTHERFILES = $(DISTNAME).spec
 SRCFILES = $(shell echo *.ml *.mli *.mll *.mly) Makefile Makefile.ocaml
 DISTFILES = $(DOCFILES) $(OTHERFILES) $(SRCFILES)
 DISTVERSIONFILES =
-MODULES = cards parser printer
+MODULES = cards parser printer inter
 LIBRARIES = 
 DISTVERSION = $(shell cat VERSION)
 #VARIANT=.profile
