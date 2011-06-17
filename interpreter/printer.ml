@@ -65,7 +65,7 @@ let std_world_printer msg =
       | MsgPlayer i -> printf "*** player %i's turn, with slots:\n" i
       | MsgWorld world ->
 	  Array.iteri print_slot (fst world);
-	  print_string "(slots {10000,I} are ommited)\n";
+	  print_string "(slots {10000,I} are omitted)\n";
       | MsgQuestion ->
 	  print_string "(1) apply card to slot, or (2) apply slot to card?\n"
       | MsgMove (i, turn) ->
