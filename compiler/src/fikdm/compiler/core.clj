@@ -157,7 +157,7 @@
 	  :right (str prefix "2\n" prefix slot "\n" prefix (name card) "\n")
 	  (throw (Exception. (str "Malformed command " command))))))
 
-(defn- shell-script [filename commands]
+(defn shell-script [filename commands]
   (spit filename
 	(str "#!/bin/bash\n"
 	     (apply str (map (fn [command]
