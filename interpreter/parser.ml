@@ -32,22 +32,22 @@ let parse_slot str =
       _ ->
 	raise (Parse_error "exception while parsing slot")
 
-let parse_input () =
+let parse_input handle () =
   let first_line = try
-    input_line stdin
+    input_line handle
   with
       End_of_file -> raise End_of_file
   in
     try
       match first_line with 
 	  "1" ->
-	    let card = parse_card (input_line stdin)
-	    in let slot = parse_slot (input_line stdin)
+	    let card = parse_card (input_line handle)
+	    in let slot = parse_slot (input_line handle)
 	    in
 	      Left (card, slot)
 	| "2" -> 
-	    let slot = parse_slot (input_line stdin)
-	    in let card = parse_card (input_line stdin)
+	    let slot = parse_slot (input_line handle)
+	    in let card = parse_card (input_line handle)
 	    in
 	      Right (slot, card)
 	| _ ->

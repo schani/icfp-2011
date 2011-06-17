@@ -1,3 +1,3 @@
 open Cards
 
-val parse_input: unit -> turn
+val parse_input: in_channel -> unit -> turn
