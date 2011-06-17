@@ -140,15 +140,20 @@
 		?x
 		(throw (Exception. (str "Malformed SKI " x))))))
 
-(defn- command-str [command]
+(defn- command-str [prefix command]
   (let [[side slot card] command]
     (case side
-	  :left (str "1\n" (name card) "\n" slot "\n")
-	  :right (str "2\n" slot "\n" (name card) "\n")
+	  :left (str prefix "1\n" prefix (name card) "\n" prefix slot "\n")
+	  :right (str prefix "2\n" prefix slot "\n" prefix (name card) "\n")
 	  (throw (Exception. (str "Malformed command " command))))))
 
-(defn- commands-str [commands]
-  (apply str (map command-str commands)))
+(defn- shell-script [filename commands]
+  (spit filename
+	(str "#!/bin/bash\n"
+	     (apply str (map (fn [command]
+			       (str (command-str "echo " command)
+				    "read ; read ; read\n"))
+			     commands)))))
 
 (defn make-loop [side-effect]
   (let [fn 'fn]
