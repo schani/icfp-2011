@@ -1,5 +1,6 @@
 (ns fikdm.compiler.core
   (:use matchure
+	clojure.set
 	clojure.contrib.def
 	clojure.contrib.str-utils))
 
@@ -41,8 +42,10 @@
     `(let [~alt (fn [] ~alternative)]
        ~(expand-if-lets bindings consequent (list alt)))))
 
-(defn- other-slot [s]
-  (- 3 s))
+(defn- alloc-slot [free]
+  (let [slot (first free)]
+    (assert (number? slot))
+    [slot (difference free #{slot})]))
 
 (defn- primitive-card? [x]
   (cond (symbol? x)
@@ -82,34 +85,36 @@
 
 (declare generate)
 
-(defn- generate-complex [s x-code y]
-  (let [os (other-slot s)]
+(defn- generate-complex [s free x-code y]
+  (assert (not (contains? free s)))
+  (let [[os os-free] (alloc-slot free)]
     (generate-mn s x-code
-		 (concat (generate y os)
-			 (generate os 0)
+		 (concat (generate y os os-free)
+			 (generate os 0 nil)
 			 [[:left 0 'get]])
 		 'get 'zero)))
 
-(defn generate [ski s]
+(defn generate [ski s free]
+  (assert (not (contains? free s)))
   (if-let [simple (gen-simple? ski s)]
     simple
     (cond-match ski
 
 		[?x [?M ?N]]
-		(let [x-code (generate x s)]
+		(let [x-code (generate x s free)]
 		  (if-lets [m-card (primitive-card? M)
 			    n-card (primitive-card? N)]
 			   (generate-mn s x-code [] m-card n-card)
 			   (if-let [y-simple (gen-simple? [M N] 0)]
 			     (generate-mn s x-code y-simple 'get 'zero)
-			     (generate-complex s x-code [M N]))))
+			     (generate-complex s free x-code [M N]))))
 
 		[?x ?y]
-		(generate-complex s (generate x s) y)
+		(generate-complex s free (generate x s free) y)
 
 		(number? ?)
 		(concat
-		 (generate (dec ski) s)
+		 (generate (dec ski) s nil)
 		 [[:left s 'succ]])
 
 		?x
