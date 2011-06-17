@@ -1,9 +1,4 @@
-type cards = | I | Zero | Succ | Dbl | Get | Put | S | K 
-	     | Inc | Dec | Attack | Help | Copy | Revive | Zombie 
-  
-type parsed_turn =
-  | Left of (cards * int)
-  | Right of (int * cards)
+open Cards
 
 exception Parse_error of string
 
