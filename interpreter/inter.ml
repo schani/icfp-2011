@@ -20,6 +20,7 @@ type skiexpr =
 type liveness = Dead | Alive
 	
 type 'world intercontext = {life: liveness;
+			    depth: int;
 			    read_own_vit: int -> 'world -> (int * 'world);
 			    read_other_vit: int -> 'world -> (int * 'world); 
 			    read_own_field: int -> 'world ->  (skiexpr * 'world);
@@ -87,8 +88,16 @@ let isslot = function
 
 let isalive x = (x > 0)
 
+let incrdepth c = 
+  let d = c.depth + 1 in
+  let c = {c with depth = d} in
+  c,(d >= 1000)
 
-let rec inter context world = function 
+let rec inter context world expr = 
+  let context,stop = incrdepth context in
+  if stop then
+    error context "max depth exceeded" world
+  else match expr with
   | Num _ as x -> x,world
   | Card(Zero) -> Num 0,world
   | Card(_) -> error context "only zero can be played as a value" world
@@ -268,6 +277,7 @@ let default_context =
   in
 
   { life = Alive;
+    depth = 0;
     read_own_vit = (fun i w -> (get vit own i w));
     read_other_vit = (fun i w -> (get vit other i w));
     read_own_field = (fun i w -> (get field own i w));
@@ -291,7 +301,7 @@ let apply_move dir slot card world context =
 	| Left -> Lambda(Card(card),field)
 	| Right -> Lambda(field,Card(card))
       in
-      let field,world = inter {context with life = Alive} world expr in
+      let field,world = inter {context with life = Alive; depth = 0} world expr in
       context.write_own_field slot field world 
     else
       context.error "apply: not alive" world
