@@ -5,6 +5,7 @@
 #include <errno.h>
 #include <getopt.h>
 #include <alloca.h>
+#include <ctype.h>
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -14,6 +15,7 @@
 #include <SDL/SDL_ttf.h>
 #include <SDL/SDL_gfxPrimitives.h>
 
+extern int usleep(unsigned long usec);
 
 
 #define	MIN(a,b)	(((a) < (b)) ? (a) : (b))
@@ -36,10 +38,36 @@
 #define	FONT_HEIGHT	12
 
 
+
+void	str_free(char *str)
+{
+	free(str);
+}
+
+char *	str_copy(char *str)
+{
+	unsigned len = strlen(str);
+	char *copy = malloc(len + 1);
+
+	if (copy)
+		memcpy(copy, str, len + 1);
+	return copy;
+}
+
+
+
+
+#define	FL_TOUCHED	1
+#define	FL_HURT		2
+#define	FL_HEALED	4
+#define	FL_RESET	8
+#define	FL_CHANGED	16
+
 typedef	struct _slot {
 	int64_t field;
 	int64_t vitality;
 	char *seq;
+	unsigned flags;
 }	slot_t;
 
 slot_t	player[2][256];
@@ -117,6 +145,8 @@ void	vis_init_slots(slot_t slot[256])
 	for (int i=0; i<256; i++) {
 		slot[i].field = -1;
 		slot[i].vitality = 10000;
+		slot[i].seq = str_copy("I");
+		slot[i].flags = 0;
 	}
 }
 
@@ -257,36 +287,48 @@ void	vis_draw_string(SDL_Surface *dst, unsigned xp, unsigned yp, char *str, Uint
 }
 
 
-void	vis_draw_slot(SDL_Surface *dst, unsigned x, unsigned y, slot_t slot)
+void	vis_draw_slot(SDL_Surface *dst, unsigned x, unsigned y, slot_t *slot)
 {
 	unsigned xp = x * SLOT_WIDTH + 1;
 	unsigned yp = y * SLOT_HEIGHT + 1;
 
-	unsigned r = (slot.field > 0) ? slot.field / 256 : 0;
-	unsigned g = (slot.vitality > 0) ? slot.vitality * 255 / 10000 : 0;
-	unsigned b = (slot.field < 0) ? -slot.field * 16 : 0;
+	unsigned r = (slot->field > 0) ? slot->field / 256 : 0;
+	unsigned g = (slot->vitality > 0) ? slot->vitality * 127 / 10000 : 0;
+	unsigned b = (slot->field < 0) ? -slot->field * 16 : 0;
+
+	if (slot->flags & FL_CHANGED)
+		b = 255;
+	if (slot->flags & FL_HURT)
+		r = 255;
+	if (slot->flags & FL_HEALED)
+		g = 255;
+
+	/* FIXME: timedelay */
+	slot->flags &= ~ (FL_TOUCHED|FL_HURT|FL_HEALED|FL_CHANGED);
 
 	boxRGBA(dst, xp, yp, xp + SLOT_WIDTH - 2, yp + SLOT_HEIGHT - 2,
 		r, g, b, 255);
 
 	char line[2][64] =  { "", "" };
 
-	if (slot.field >= 0)
-		sprintf(line[0], "%5ld", slot.field);
-	if (slot.field < 0)
-		sprintf(line[0], "%s", card_name_from_id(slot.field));
+	if (slot->seq) {
+		sprintf(line[0], "%5.5s", slot->seq);
+	} else {
+		sprintf(line[0], "%5ld", slot->field);
+	}
 
-	sprintf(line[1], "%5ld", slot.vitality);
+	sprintf(line[1], "%5ld", slot->vitality);
 
 	for (int i=0; i<2; i++)
-		vis_draw_string(dst, xp, yp + i * FONT_HEIGHT, line[i], 255, 255, 255);
+		vis_draw_string(dst, xp, yp + i * FONT_HEIGHT,
+			line[i], 255, 255, 255);
 }
 
 void	vis_draw_slots(SDL_Surface *dst, slot_t slot[256])
 {
 	for (int x = 0; x < 16; x++) {
 		for (int y = 0; y < 16; y++) {
-			vis_draw_slot(dst, x, y, slot[x + y*16]);
+			vis_draw_slot(dst, x, y, &slot[x + y*16]);
 		}
 	}
 }
@@ -320,6 +362,13 @@ void	vis_draw_cards(SDL_Surface *dst)
 
 
 
+
+
+
+
+
+
+
 uint64_t turn = 0;
 int play_id = 0;
 int card_id = 0;
@@ -327,15 +376,14 @@ int slot_id = 0;
 int vitality = 0;
 
 
-
-
-void	parse_turn_info(char *line)
+bool	parse_turn_info(char *line)
 {
 	sscanf(line, "###### turn %ld", &turn);
-	printf("turn %ld\n", turn);  
+	printf("\nturn %ld\n", turn);
+	return true;
 }
 
-void	parse_player_info(char *line)
+bool	parse_player_info(char *line)
 {
 	char card_name[64];
 	int n;
@@ -343,39 +391,83 @@ void	parse_player_info(char *line)
 	n = sscanf(line, "player %d applied card %s to slot %d",
 		&play_id, card_name, &slot_id);
 	if (n == 3) {
-		printf("%d: %s -> %d [%d]\n", play_id, card_name, slot_id, n);  
-		return;
+		printf("%c: %s -> [%d]\n",
+			play_id ? 'B' : 'A',
+			card_name, slot_id);
+		return true;
 	}
 
 	n = sscanf(line, "player %d applied slot %d to card %s",
 		&play_id, &slot_id, card_name);
 	if (n == 3) {
-		printf("%d: %d -> %s [%d]\n", play_id, slot_id, card_name, n);  
-		return;
+		printf("%c: [%d] -> %s\n",
+			play_id ? 'B' : 'A',
+			slot_id, card_name);
+		return true;
 	}
+	return false;
 }
 
-void	parse_player_turn(char *line)
+bool	parse_player_turn(char *line)
 {
 	sscanf(line, "*** player %d'", &play_id);
-	printf("player %d\n", play_id);  
+	printf("player %c\n", play_id ? 'B' : 'A');
+	return false;
 }
 
-void	parse_slot(char *line)
+bool	parse_slot(char *line)
 {
-	int n = sscanf(line, "%d={%d,", &slot_id, &vitality);
-	if (n == 2) {
-		printf("slot %d: %d\n", slot_id, vitality);  
+	static char expr[65536];
+	int n = sscanf(line, "%d={%d,%[^}]", &slot_id, &vitality, expr);
+	if (n == 3) {
+		slot_t *slot =  &player[play_id][slot_id];
+
+		printf("[%d]: |%d| %s\n", slot_id, vitality, expr);
+
+		if (slot->vitality < vitality) {
+			slot->vitality = vitality;
+			slot->flags |= FL_HEALED;
+		} else if (slot->vitality > vitality) {
+			slot->vitality = vitality;
+			slot->flags |= FL_HURT;
+		}
+		
+		if (isdigit(expr[0])) {
+			unsigned val = atol(expr);
+
+			if (player[play_id][slot_id].field == val)
+				return false;
+
+			str_free(player[play_id][slot_id].seq);
+			player[play_id][slot_id].field = val;
+			player[play_id][slot_id].seq = NULL;
+			slot->flags |= FL_CHANGED;
+		} else  {
+			if (player[play_id][slot_id].seq &&
+				(strcmp(player[play_id][slot_id].seq,
+					expr) == 0))
+				return false;
+
+			str_free(player[play_id][slot_id].seq);
+			player[play_id][slot_id].field = -1;
+			player[play_id][slot_id].seq = str_copy(expr);
+			slot->flags |= FL_CHANGED;
+		}
 	}
-	return;	
+	return false;
 }
 
-void	parse_expr(char *line)
+bool	parse_expr(char *line)
 {
 	/* (slots ... ) and (1) ignored for now */
-	return;	
+	return false;
 }
 
+bool	parse_exception(char *line)
+{
+	printf("%s\n", line);
+	return false;
+}
 
 enum	_state {
 	ST_INIT	= 0,
@@ -384,30 +476,36 @@ enum	_state {
 };
 
 
-void	parse_input(char *line)
+bool	parse_input(char *line)
 {
 	static char state = ST_INIT;
-	
+	bool ret = false;
+
 	switch (line[0]) {
 	case 'L':	/* Lambda */
 		state = ST_SCAN;
-	
-	case '#':	/* turn info */
-		parse_turn_info(line);
 		break;
-		
+
+	case '#':	/* turn info */
+		ret = parse_turn_info(line);
+		break;
+
 	case 'p':	/* player info */
-		parse_player_info(line);
+		ret = parse_player_info(line);
 		break;
 
 	case '*':	/* players turn */
-		parse_player_turn(line);
+		ret = parse_player_turn(line);
 		state = ST_TURN;
 		break;
 
 	case '(':	/* refine */
-		parse_expr(line);
+		ret = parse_expr(line);
 		state = ST_SCAN;
+		break;
+
+	case 'E':	/* exception */
+		ret = parse_exception(line);
 		break;
 
 	case '0':
@@ -420,15 +518,15 @@ void	parse_input(char *line)
 	case '7':
 	case '8':
 	case '9':
-		parse_slot(line);
+		ret = parse_slot(line);
 		break;
 
 	case 's':	/* slot ignored */
 	case 'c':	/* card ignored */
 	default:	/* ignored */
 		break;
-
 	}
+	return ret;
 }
 
 
@@ -494,11 +592,26 @@ int	main(int argc, char *argv[])
 	vis_draw_cards(card0);
 	vis_draw_cards(card1);
 
-
 	unsigned frame = 0;
-	char line[4096];	/* fixme */
+	char line[65536];	/* fixme */
+	bool ret;
 
 	while (1) {
+		if (feof(stdin))
+			goto sdl_check;
+		fgets(line, sizeof(line), stdin);
+		ret = parse_input(line);
+		
+		if (!ret)
+			continue;
+
+
+		vis_draw_slots(play0, player[0]);
+		vis_draw_slots(play1, player[1]);
+
+		vis_draw_cards(card0);
+		vis_draw_cards(card1);
+
 		SDL_Rect psrcRect = {0, 0, PLAY_WIDTH, PLAY_HEIGHT };
 		SDL_Rect play0Rect = {10, 10, PLAY_WIDTH, PLAY_HEIGHT };
 		SDL_Rect play1Rect = {VID_WIDTH - 10 - PLAY_WIDTH, 10, PLAY_WIDTH, PLAY_HEIGHT };
@@ -515,16 +628,14 @@ int	main(int argc, char *argv[])
 
 		SDL_Flip(screen); //Refresh the screen
 
-		fgets(line, sizeof(line), stdin);
-		parse_input(line);
-
-
+	sdl_check:;
 		SDL_Event event; /* Event structure */
 		if (SDL_PollEvent(&event)) {
 			if (event.type == SDL_QUIT)
 				break;
 		}
 
+		usleep(100000);
 		frame++;
 	}
 
