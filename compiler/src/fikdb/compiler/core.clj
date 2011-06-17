@@ -30,13 +30,14 @@
 	      x))
 
 (defn optimize-ski [ski]
-  (or
-   (if-match [[[?S [?K ?L]] [?M ?x]] ski]
-	     (if (and (= S 'S) (= K 'K) (= L 'K) (= M 'K))
-	       `(K (K ~x))))
-   (if (seq? ski)
-     (map optimize-ski ski)
-     ski)))
+  (if (seq? ski)
+    (let [ski (map optimize-ski ski)]
+      (or
+       (if-match [[[?S [?K ?L]] [?M ?x]] ski]
+		 (if (and (= S 'S) (= K 'K) (= L 'K) (= M 'K))
+		   `(K (K ~x))))
+       ski))
+    ski))
 
 (defn- expand-if-lets [bindings consequent alternative]
   (if (empty? bindings)
