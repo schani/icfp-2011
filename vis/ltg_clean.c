@@ -42,7 +42,9 @@ void	parse_player_info(char *line)
 	n = sscanf(line, "player %d applied slot %d to card %s",
 		&play_id, &slot_id, card_name);
 	if (n == 3) {
-		printf("%d: [%d] -> %s\n", play_id, slot_id, card_name);  
+		printf("%c: [%d] -> %s\n",
+			play_id ? 'B' : 'A',
+			slot_id, card_name);  
 		return;
 	}
 }
@@ -69,6 +71,11 @@ void	parse_expr(char *line)
 	return;	
 }
 
+void	parse_exception(char *line)
+{
+	printf("%s\n", line);
+	return;	
+}
 
 enum	_state {
 	ST_INIT	= 0,
@@ -101,6 +108,10 @@ void	parse_input(char *line)
 	case '(':	/* refine */
 		parse_expr(line);
 		state = ST_SCAN;
+		break;
+
+	case 'E':	/* exception */
+		parse_exception(line);
 		break;
 
 	case '0':
