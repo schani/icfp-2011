@@ -307,7 +307,7 @@ let default_context =
     write_own_field = (fun i field w -> (set rfield own i field w));
     write_other_field = (fun i field w -> (set rfield other i field w));
     count_alive_own = (count_alive own);
-    count_alive_other = (count_alive own);
+    count_alive_other = (count_alive other);
     error = (fun msg w -> raise (InterError(msg,w)));
     end_move = (function p1,p2 -> p2,p1);
     }
