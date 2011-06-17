@@ -3,6 +3,7 @@ type cards = | I | Zero | Succ | Dbl | Get | Put | S | K
 	     | Inc | Dec | Attack | Help | Copy | Revive | Zombie 
 *)
 open Cards
+open Printer
   
 (*		 
 type skiexpr = 
@@ -357,7 +358,7 @@ let apply_player context world player =
   let world = apply_move move world context in 
   let count,world = context.count_alive_own world in
   let world = context.end_move world in
-  count,world
+  count,world,move
 
 let play_game context world player0 player1 printer = 
   let winner world = 
@@ -377,19 +378,25 @@ let play_game context world player0 player1 printer =
     if i >= 100000 then
       winner world
     else
-      (printer world;
-       let count,world = apply_player context world player0 in
-       if count = 0 then
-	 1,world
-       else
-	 (printer world;
-	  let count,world = apply_player context world player1 in
-	  if count = 0 then 
-	    0,world
-	  else
-	    loop (i+1) world))
+      (printer (MsgTurn i);
+       printer (MsgPlayer 0);
+       printer (MsgWorld world);
+       printer MsgQuestion;
+       let count,world,move = apply_player context world player0
+       in
+	 printer (MsgMove (0, move));
+	 if count = 0 then
+	   1,world
+	 else
+	   (printer (MsgPlayer 1);
+	    printer (MsgWorld world);
+	    printer MsgQuestion;
+	    let count,world,move = apply_player context world player1
+	    in
+	      printer (MsgMove (1, move));
+	      if count = 0 then 
+		0,world
+	      else
+		loop (i+1) world))
   in
-  loop 0 world
-  
-    
-
+    loop 0 world
