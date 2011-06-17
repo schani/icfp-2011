@@ -1,6 +1,8 @@
-
+(*
 type cards = | I | Zero | Succ | Dbl | Get | Put | S | K 
 	     | Inc | Dec | Attack | Help | Copy | Revive | Zombie 
+*)
+open Cards
   
 		 
 type skiexpr = 
@@ -310,16 +312,19 @@ let default_context =
     end_move = (function p1,p2 -> p2,p1);
     }
   
-type application_direction = Left | Right
-
-let apply_move dir slot card world context = 
+let movegetslot = function 
+  | Left(_,slot) -> slot 
+  | Right(slot,_) -> slot 
+    
+let apply_move move world context = 
+  let slot = movegetslot move in 
   let vit,world = context.read_own_vit slot world in
   try 
     if isalive vit then
       let field,world = context.read_own_field slot world in
-      let expr = match dir with 
-	| Left -> Lambda(Card(card),field)
-	| Right -> Lambda(field,Card(card))
+      let expr = match move with 
+	| Left(card,_) -> Lambda(Card(card),field)
+	| Right(_,card) -> Lambda(field,Card(card))
       in
       let field,world = inter {context with life = Alive; depth = 0} world expr in
       context.write_own_field slot field world 
