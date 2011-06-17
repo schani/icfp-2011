@@ -35,7 +35,7 @@ let _ =
 	  play_game default_context (create_default_world ())
 	    (parse_input stdin) (output_callback None)
 	    (parse_input stdin) (output_callback None)
-	    std_world_printer
+	    std_world_printer 0
       | RM_MATCH (p1, p2) ->
 	  let p1_in_channel, p1_out_channel = Unix.open_process (p1 ^ " 0")
 	  and p2_in_channel, p2_out_channel = Unix.open_process (p2 ^ " 1")
@@ -43,4 +43,4 @@ let _ =
 	    play_game default_context (create_default_world ())
 	      (parse_input p1_in_channel) (output_callback (Some p1_out_channel))
 	      (parse_input p2_in_channel) (output_callback (Some p2_out_channel))
-	      std_world_printer
+	      std_world_printer 1

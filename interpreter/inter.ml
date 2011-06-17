@@ -360,7 +360,7 @@ let apply_player context world player =
   let world = context.end_move world in
   count,world,move
 
-let play_game context world player0_input player0_output_callback player1_input player1_output_callback printer = 
+let play_game context world player0_input player0_output_callback player1_input player1_output_callback printer startturn = 
   let winner world = 
     let count0 = context.count_alive_own world in
     let count1 = context.count_alive_other world in
@@ -401,4 +401,4 @@ let play_game context world player0_input player0_output_callback player1_input 
 	      else
 		loop (i+1) world))
   in
-    loop 0 world
+    loop startturn world
