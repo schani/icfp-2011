@@ -360,7 +360,7 @@ let apply_player context world player =
   let world = context.end_move world in
   count,world,move
 
-let play_game context world player0 player1 printer = 
+let play_game context world player0_input player0_output_callback player1_input player1_output_callback printer = 
   let winner world = 
     let count0 = context.count_alive_own world in
     let count1 = context.count_alive_other world in
@@ -382,18 +382,20 @@ let play_game context world player0 player1 printer =
        printer (MsgPlayer 0);
        printer (MsgWorld world);
        printer MsgQuestion;
-       let count,world,move = apply_player context world player0
+       let count,world,move = apply_player context world player0_input
        in
 	 printer (MsgMove (0, move));
+	 player0_output_callback move;
 	 if count = 0 then
 	   1,world
 	 else
 	   (printer (MsgPlayer 1);
 	    printer (MsgWorld world);
 	    printer MsgQuestion;
-	    let count,world,move = apply_player context world player1
+	    let count,world,move = apply_player context world player1_input
 	    in
 	      printer (MsgMove (1, move));
+	      player1_output_callback move;
 	      if count = 0 then 
 		0,world
 	      else

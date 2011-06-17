@@ -13,6 +13,11 @@ let runmode = ref RM_UNKNOWN
 
 let default_world_printer world = ()
 
+let output_callback handle turn =
+  match handle with
+    | None -> ()
+    | Some handle -> output_string handle (msg_of_turn turn)
+
 let _ =
   let parse_otherargs str =
     runmode :=
@@ -28,10 +33,14 @@ let _ =
       | RM_ONLY -> failwith "not yet implemented"
       | RM_ALT ->
 	  play_game default_context (create_default_world ())
-	    (parse_input stdin) (parse_input stdin) std_world_printer
+	    (parse_input stdin) (output_callback None)
+	    (parse_input stdin) (output_callback None)
+	    std_world_printer
       | RM_MATCH (p1, p2) ->
 	  let p1_in_channel, p1_out_channel = Unix.open_process ("p1" ^ " 0")
 	  and p2_in_channel, p2_out_channel = Unix.open_process ("p1" ^ " 1")
 	  in
 	    play_game default_context (create_default_world ())
-	      (parse_input p1_in_channel) (parse_input p2_in_channel) std_world_printer
+	      (parse_input p1_in_channel) (output_callback (Some p1_out_channel))
+	      (parse_input p2_in_channel) (output_callback (Some p2_out_channel))
+	      std_world_printer
