@@ -6,3 +6,5 @@
 *.cmx
 *.deps
 *.ideps
+vis/ltg_clean
+vis/ltg_vis

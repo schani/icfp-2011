@@ -63,11 +63,23 @@ char *	str_copy(char *str)
 #define	FL_RESET	8
 #define	FL_CHANGED	16
 
+
+#define	TI_VITALITY	20
+#define	TI_CHANGED	16
+#define	TI_RESET	8
+
+typedef	char vtim_t;
+
 typedef	struct _slot {
 	int64_t field;
 	int64_t vitality;
 	char *seq;
 	unsigned flags;
+	struct _vtim {
+		vtim_t ti_vitality;
+		vtim_t ti_changed;
+		vtim_t ti_reset;
+	} vtim;
 }	slot_t;
 
 slot_t	player[2][256];
@@ -286,25 +298,70 @@ void	vis_draw_string(SDL_Surface *dst, unsigned xp, unsigned yp, char *str, Uint
 	SDL_FreeSurface(sText);
 }
 
+void	vis_slot_background(slot_t *slot,
+	unsigned *r, unsigned *g, unsigned *b)
+{
+	*r = 15;
+	*g = 15;
+	*b = 15;
+}
+
+
+void	vis_timer_set(vtim_t *t, unsigned val)
+{
+	*t = val;
+}
+
+int	vis_timer(vtim_t *t)
+{
+	vtim_t cur = *t;
+
+	if (cur)
+		(*t)--;
+	return cur;
+}
+
+int	vis_mix(float mix, unsigned a, unsigned b)
+{
+	float val = a * mix + b * (1 - mix);
+	return (int)val;
+}
+
 
 void	vis_draw_slot(SDL_Surface *dst, unsigned x, unsigned y, slot_t *slot)
 {
 	unsigned xp = x * SLOT_WIDTH + 1;
 	unsigned yp = y * SLOT_HEIGHT + 1;
 
-	unsigned r = (slot->field > 0) ? slot->field / 256 : 0;
-	unsigned g = (slot->vitality > 0) ? slot->vitality * 127 / 10000 : 0;
-	unsigned b = (slot->field < 0) ? -slot->field * 16 : 0;
+	unsigned r, g, b;
+	
+	vis_slot_background(slot, &r, &g, &b);
 
-	if (slot->flags & FL_CHANGED)
-		b = 255;
-	if (slot->flags & FL_HURT)
-		r = 255;
-	if (slot->flags & FL_HEALED)
-		g = 255;
-
-	/* FIXME: timedelay */
-	slot->flags &= ~ (FL_TOUCHED|FL_HURT|FL_HEALED|FL_CHANGED);
+	if (slot->flags & FL_CHANGED) {
+		unsigned tv = vis_timer(&slot->vtim.ti_changed);
+		
+		if (tv)
+			b = vis_mix((float)tv/TI_CHANGED, 255, b);
+		else
+			slot->flags &= ~FL_CHANGED;
+	}
+	
+	if (slot->flags & FL_HURT) {
+		unsigned tv = vis_timer(&slot->vtim.ti_vitality);
+		
+		if (tv)
+			r = vis_mix((float)tv/TI_VITALITY, 255, r);
+		else
+			slot->flags &= ~FL_HURT;
+	}
+	if (slot->flags & FL_HEALED) {
+		unsigned tv = vis_timer(&slot->vtim.ti_vitality);
+		
+		if (tv)
+			g = vis_mix((float)tv/TI_VITALITY, 255, g);
+		else
+			slot->flags &= ~FL_HEALED;
+	}
 
 	boxRGBA(dst, xp, yp, xp + SLOT_WIDTH - 2, yp + SLOT_HEIGHT - 2,
 		r, g, b, 255);
@@ -427,9 +484,11 @@ bool	parse_slot(char *line)
 		if (slot->vitality < vitality) {
 			slot->vitality = vitality;
 			slot->flags |= FL_HEALED;
+			vis_timer_set(&slot->vtim.ti_vitality, TI_VITALITY);
 		} else if (slot->vitality > vitality) {
 			slot->vitality = vitality;
 			slot->flags |= FL_HURT;
+			vis_timer_set(&slot->vtim.ti_vitality, TI_VITALITY);
 		}
 		
 		if (isdigit(expr[0])) {
@@ -442,6 +501,7 @@ bool	parse_slot(char *line)
 			player[play_id][slot_id].field = val;
 			player[play_id][slot_id].seq = NULL;
 			slot->flags |= FL_CHANGED;
+			vis_timer_set(&slot->vtim.ti_changed, TI_CHANGED);
 		} else  {
 			if (player[play_id][slot_id].seq &&
 				(strcmp(player[play_id][slot_id].seq,
@@ -452,6 +512,7 @@ bool	parse_slot(char *line)
 			player[play_id][slot_id].field = -1;
 			player[play_id][slot_id].seq = str_copy(expr);
 			slot->flags |= FL_CHANGED;
+			vis_timer_set(&slot->vtim.ti_changed, TI_CHANGED);
 		}
 	}
 	return false;
@@ -584,7 +645,7 @@ int	main(int argc, char *argv[])
 		exit(2);
 	}
 
-	fnt = TTF_OpenFont("/usr/share/fonts/TTF/Vera.ttf", 8);
+	fnt = TTF_OpenFont("/icfpnfs/BERTL/vis.ttf", 8);
 	if (!fnt) {
 		fprintf(stderr,
 			"Unable to open font: %s\n",
@@ -640,7 +701,7 @@ int	main(int argc, char *argv[])
 				break;
 		}
 
-		usleep(100000);
+		usleep(10000);
 		frame++;
 	}
 
