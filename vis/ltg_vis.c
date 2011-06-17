@@ -530,6 +530,22 @@ bool	parse_input(char *line)
 }
 
 
+
+
+int	do_parse(void *dummy)
+{
+	static char line[65536];	/* fixme */
+	bool ret;
+
+	while (!feof(stdin)) {
+		fgets(line, sizeof(line), stdin);
+		ret = parse_input(line);
+	}
+	return 0;
+}
+
+
+
 int	main(int argc, char *argv[])
 {
 
@@ -576,7 +592,6 @@ int	main(int argc, char *argv[])
 		exit(3);
 	}
 
-
 	vis_init_slots(player[0]);
 	vis_init_slots(player[1]);
 
@@ -592,20 +607,11 @@ int	main(int argc, char *argv[])
 	vis_draw_cards(card0);
 	vis_draw_cards(card1);
 
+	SDL_Thread *parse_thread = SDL_CreateThread(do_parse, NULL);
+
 	unsigned frame = 0;
-	char line[65536];	/* fixme */
-	bool ret;
 
 	while (1) {
-		if (feof(stdin))
-			goto sdl_check;
-		fgets(line, sizeof(line), stdin);
-		ret = parse_input(line);
-		
-		if (!ret)
-			continue;
-
-
 		vis_draw_slots(play0, player[0]);
 		vis_draw_slots(play1, player[1]);
 
@@ -628,7 +634,6 @@ int	main(int argc, char *argv[])
 
 		SDL_Flip(screen); //Refresh the screen
 
-	sdl_check:;
 		SDL_Event event; /* Event structure */
 		if (SDL_PollEvent(&event)) {
 			if (event.type == SDL_QUIT)
@@ -638,6 +643,8 @@ int	main(int argc, char *argv[])
 		usleep(100000);
 		frame++;
 	}
+
+	SDL_KillThread(parse_thread);
 
 	exit(0);
 }
