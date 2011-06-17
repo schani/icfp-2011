@@ -16,7 +16,9 @@ let default_world_printer world = ()
 let output_callback handle turn =
   match handle with
     | None -> ()
-    | Some handle -> output_string handle (msg_of_turn turn)
+    | Some handle ->
+	output_string handle (msg_of_turn turn);
+	flush handle
 
 let _ =
   let compute_runmode () =

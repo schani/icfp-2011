@@ -384,8 +384,8 @@ let play_game context world player0_input player0_output_callback player1_input 
        printer MsgQuestion;
        let count,world,move = apply_player context world player0_input
        in
+	 player1_output_callback move;
 	 printer (MsgMove (0, move));
-	 player0_output_callback move;
 	 if count = 0 then
 	   1,world
 	 else
@@ -394,8 +394,8 @@ let play_game context world player0_input player0_output_callback player1_input 
 	    printer MsgQuestion;
 	    let count,world,move = apply_player context world player1_input
 	    in
+	      player0_output_callback move;
 	      printer (MsgMove (1, move));
-	      player1_output_callback move;
 	      if count = 0 then 
 		0,world
 	      else
