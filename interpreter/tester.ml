@@ -19,16 +19,14 @@ let output_callback handle turn =
     | Some handle -> output_string handle (msg_of_turn turn)
 
 let _ =
-  let parse_otherargs str =
-    runmode :=
-      match (Str.split (Str.regexp " +") str) with
-	| ["only"] -> RM_ONLY
-	| ["alt"] -> RM_ALT
-	| ["match"; p1; p2] -> RM_MATCH (p1, p2)
-	| _ -> failwith "illegal argument"
+  let compute_runmode () =
+    match Sys.argv with
+      | [|_; "only"|] -> RM_ONLY
+      | [|_; "alt"|] -> RM_ALT
+      | [|_; "match"; p1; p2|] -> RM_MATCH (p1, p2)
+      | _ -> failwith "illegal arguments"
   in
-    Arg.parse [] parse_otherargs "only | alt | match <prog1> <prog2>";
-    match !runmode with
+    match compute_runmode () with
       | RM_UNKNOWN -> failwith "dunno what to do, gimme some args"
       | RM_ONLY -> failwith "not yet implemented"
       | RM_ALT ->
@@ -37,8 +35,8 @@ let _ =
 	    (parse_input stdin) (output_callback None)
 	    std_world_printer
       | RM_MATCH (p1, p2) ->
-	  let p1_in_channel, p1_out_channel = Unix.open_process ("p1" ^ " 0")
-	  and p2_in_channel, p2_out_channel = Unix.open_process ("p1" ^ " 1")
+	  let p1_in_channel, p1_out_channel = Unix.open_process (p1 ^ " 0")
+	  and p2_in_channel, p2_out_channel = Unix.open_process (p2 ^ " 1")
 	  in
 	    play_game default_context (create_default_world ())
 	      (parse_input p1_in_channel) (output_callback (Some p1_out_channel))
