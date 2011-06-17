@@ -361,7 +361,7 @@ let apply_player context world player =
   let world = context.end_move world in
   count,world
 
-let play_game context world player0 player1 = 
+let play_game context world player0 player1 printer = 
   let winner world = 
     let count0 = context.count_alive_own world in
     let count1 = context.count_alive_other world in
@@ -379,15 +379,17 @@ let play_game context world player0 player1 =
     if i >= 100000 then
       winner world
     else
-      let count,world = apply_player context world player0 in
-      if count = 0 then
-	1,world
-      else
-	let count,world = apply_player context world player1 in
-	if count = 0 then 
-	  0,world
-	else
-	  loop (i+1) world
+      (printer world;
+       let count,world = apply_player context world player0 in
+       if count = 0 then
+	 1,world
+       else
+	 (printer world;
+	  let count,world = apply_player context world player1 in
+	  if count = 0 then 
+	    0,world
+	  else
+	    loop (i+1) world))
   in
   loop 0 world
   
