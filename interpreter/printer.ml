@@ -39,14 +39,11 @@ let rec string_of_expr = function
   | HelpIJ (e1, e2) -> "Help(" ^ (string_of_expr e1) ^ (string_of_expr e2) ^ ")"
   | ZombieI e -> "Zombie(" ^ (string_of_expr e) ^ ")"
 
-let rec print_slots ?(i=0) = function
-  | [] ->
-      print_string "(slots {10000,I} are ommited)\n"
-  | (vir, expr) :: rest ->
-      printf "%i={%i,%s}\n" i vir (string_of_expr expr);
-      print_slots ~i:(i+1) rest
+let print_slot i = function
+  | 10000, Card I -> ()
+  | vir, expr -> printf "%i={%i,%s}\n" i vir (string_of_expr expr)
 
-(* world is of type (slot array)*(slot array) *)
-let std_world_printer slots =
-  print_slots slots
-  
+let std_world_printer (world :default_world_type) =
+  Array.iteri print_slot (fst world);
+  print_string "(slots {10000,I} are ommited\n";
+  flush stdout
