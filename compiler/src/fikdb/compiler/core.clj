@@ -85,7 +85,7 @@
   (let [os (other-slot s)]
     (generate-mn s x-code
 		 (concat (generate y os)
-			 (gen-primitive? 0 os)
+			 (generate os 0)
 			 [[:left 0 'get]])
 		 'get 'zero)))
 
