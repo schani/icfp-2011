@@ -70,34 +70,53 @@
 					[[:right s r-card]])
 				nil)))))
 
+(defn- generate-mn [s x-code y-code m-card n-card]
+  (concat
+   x-code
+   y-code
+   [[:left s 'K]
+    [:left s 'S]
+    [:right s m-card]
+    [:right s n-card]]))
+
+(declare generate)
+
+(defn- generate-complex [s x-code y]
+  (let [os (other-slot s)]
+    (generate-mn s x-code
+		 (concat (generate y os)
+			 (gen-primitive? 0 os)
+			 [[:left 0 'get]])
+		 'get 'zero)))
+
 (defn generate [ski s]
-  (cond-match ski
+  (if-let [simple (gen-simple? ski s)]
+    simple
+    (cond-match ski
 
-	      [?x ?y]
-	      (if-let [simple (gen-simple? ski s)]
-		simple
-		(let [os (other-slot s)]
-		  (concat
-		   (generate x s)
-		   (generate y os)
-		   (generate os 0)
-		   [[:left 0 'get]
-		    [:left s 'K]
-		    [:left s 'S]
-		    [:right s 'get]
-		    [:right s 'zero]])))
+		[?x [?M ?N]]
+		(let [x-code (generate x s)]
+		  (if-lets [m-card (primitive-card? M)
+			    n-card (primitive-card? N)]
+			   (generate-mn s x-code [] m-card n-card)
+			   (if-let [y-simple (gen-simple? [M N] 0)]
+			     (generate-mn s x-code y-simple 'get 'zero)
+			     (generate-complex s x-code [M N]))))
 
-	      (and (number? ?) (zero? ?))
-	      [[:left s 'put]
-	       [:right s 'zero]]
+		[?x ?y]
+		(generate-complex s (generate x s) y)
 
-	      (number? ?)
-	      (concat
-	       (generate (dec ski) s)
-	       [[:left s 'succ]])
+		(number? ?)
+		(concat
+		 (generate (dec ski) s)
+		 [[:left s 'succ]])
 
-	      ?x
-	      (if (= x 'I)
-		[[:left s 'put]]
-		[[:left s 'put]
-		 [:right s x]])))
+		?x
+		(throw (Exception. (str "Malformed SKI " x))))))
+
+;; endless loop
+;(compile-lambda '(((S I) I)
+;		  (fn [f]
+;		    ((fn [y]
+;		       (((S I) I) f))
+;		     :boes))))
