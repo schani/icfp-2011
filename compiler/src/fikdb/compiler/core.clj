@@ -26,4 +26,33 @@
 	      ?x
 	      x))
 
-;;(compile-lambda '(fn [x] (fn [y] x)))
+(defn- other-slot [s]
+  (- 3 s))
+
+(defn generate [ski s]
+  (cond-match ski
+
+	      [?x ?y]
+	      (let [os (other-slot s)]
+		(concat
+		 (generate x s)
+		 (generate y os)
+		 (generate os 0)
+		 [[:left 0 'get]
+		  [:left s 'K]
+		  [:left s 'S]
+		  [:right s 'get]
+		  [:right s 'zero]]))
+
+	      (and (number? ?) (zero? ?))
+	      [[:left s 'put]
+	       [:right s 'zero]]
+
+	      (number? ?)
+	      (concat
+	       (generate (dec ski) s)
+	       [[:left s 'succ]])
+
+	      ?x
+	      [[:left s 'put]
+	       [:right s x]]))
