@@ -93,16 +93,16 @@
 
 (shell-script "/tmp/beidler.sh"
 	      (concat
-	       (generate 0 64 nil)
 	       (generate (lambda->ski
 			  (make-apply-self-return
 			   (make-repeat-effect-fn 8
 						  (make-help-get-attack-fn 0 8192 64 768)))) 65 *regs*)
-	       (apply concat (repeat 256
-				     [[:right 65 :I]
-				      [:right 65 :I]
-				      [:left 64 :succ]]))
-	       ))
+	       [[:left -1 :init-number]]
+	       (generate 0 64 nil)
+	       [[:left -1 :death-loop]
+		[:right 65 :I]
+		[:right 65 :I]
+		[:left 64 :succ]]))
 
 ;;(spit-echoer "/tmp/beidler.sh" (make-help-attack-loop 0 8192 0 768))
 ;;(spit-echoer "/tmp/beidler.sh" (make-dec-loop 0))
