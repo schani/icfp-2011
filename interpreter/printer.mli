@@ -7,6 +7,7 @@ type msg_type =
   | MsgWorld of default_world_type
   | MsgQuestion
   | MsgMove of (int * turn)
+  | MsgReset of int
 
 (* generates a string "message" as specified in the task description *)
 val msg_of_turn: turn -> string
