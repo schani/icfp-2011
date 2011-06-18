@@ -42,7 +42,7 @@ extern int usleep(unsigned long usec);
 #define	STAT_HEIGHT	48
 
 #define	SCORE_WIDTH	128
-#define	SCORE_HEIGHT	40
+#define	SCORE_HEIGHT	38
 
 #define	FONT_HEIGHT	10
 
@@ -352,11 +352,9 @@ out_err:
 
 
 
-
 TTF_Font *small_fnt = NULL;
 TTF_Font *stats_fnt = NULL;
-
-
+TTF_Font *score_fnt = NULL;
 
 
 uint64_t turn = 0;
@@ -400,7 +398,21 @@ void	vis_draw_string(SDL_Surface *dst, unsigned xp, unsigned yp,
 	SDL_FreeSurface(sText);
 }
 
-void	vis_draw_string_centered(SDL_Surface *dst, unsigned xp, unsigned yp,
+void	vis_draw_string_shaded(SDL_Surface *dst, unsigned xp, unsigned yp,
+		TTF_Font *fnt, char *str,
+		Uint8 r, Uint8 g, Uint8 b,
+		Uint8 rb, Uint8 gb, Uint8 bb)
+{
+	SDL_Rect dstRect = {xp, yp, 0, 0};
+	SDL_Color fg = { .r = r, .g = g, .b = b };
+	SDL_Color bg = { .r = rb, .g = gb, .b = bb };
+	
+	SDL_Surface *sText = TTF_RenderText_Shaded(fnt, str, fg, bg);
+	SDL_BlitSurface(sText, NULL, dst, &dstRect);
+	SDL_FreeSurface(sText);
+}
+
+void	vis_draw_string_center(SDL_Surface *dst, unsigned xp, unsigned yp,
 		TTF_Font *fnt, char *str, Uint8 r, Uint8 g, Uint8 b)
 {
 	int w, h;
@@ -408,6 +420,19 @@ void	vis_draw_string_centered(SDL_Surface *dst, unsigned xp, unsigned yp,
 	TTF_SizeText(fnt, str, &w, &h);
 	
 	vis_draw_string(dst, xp - w / 2, yp, fnt, str, r, g, b);
+}
+
+void	vis_draw_string_center_shaded(SDL_Surface *dst, unsigned xp, unsigned yp,
+		TTF_Font *fnt, char *str,
+		Uint8 r, Uint8 g, Uint8 b,
+		Uint8 rb, Uint8 gb, Uint8 bb)
+{
+	int w, h;
+	
+	TTF_SizeText(fnt, str, &w, &h);
+	
+	vis_draw_string_shaded(dst, xp - w / 2, yp, fnt, str,
+		r, g, b, rb, gb, bb);
 }
 
 void	vis_slot_background(slot_t *slot,
@@ -569,7 +594,16 @@ void	vis_draw_vitality(SDL_Surface *dst, uint64_t vitality)
 
 void	vis_draw_stats(SDL_Surface *dst, stat_t *stat)
 {
-	boxRGBA(dst, 0, 0, STAT_WIDTH, STAT_HEIGHT, 64, 64, 64, 255);
+	boxRGBA(dst, 0, 0, STAT_WIDTH, STAT_HEIGHT, 32, 32, 32, 255);
+
+	char line[5][64] =  { "", "", "", "", "" };
+
+	sprintf(line[0], "vitavg: %ld", stat->total_vitality / 256);
+	sprintf(line[1], "zombies: %ld", stat->zombies);
+
+	for (int i=0; i<2; i++)
+		vis_draw_string_shaded(dst, 4, 4 + i * 14,
+			stats_fnt, line[i], 255, 255, 255, 32, 32, 32);
 }
 
 void	vis_draw_score(SDL_Surface *dst)
@@ -583,8 +617,8 @@ void	vis_draw_score(SDL_Surface *dst)
 		player_stat[0].slots_alive, player_stat[1].slots_alive);
 
 	for (int i=0; i<2; i++)
-		vis_draw_string_centered(dst, SCORE_WIDTH / 2, 2 + i * 16,
-			stats_fnt, line[i], 255, 255, 255);
+		vis_draw_string_center_shaded(dst, SCORE_WIDTH / 2, 2 + i * 16,
+			score_fnt, line[i], 255, 255, 255, 64, 64, 64);
 }
 
 
@@ -840,12 +874,20 @@ int	main(int argc, char *argv[])
 		exit(3);
 	}
 
-	stats_fnt = TTF_OpenFont("/icfpnfs/BERTL/vis_stats.ttf", 14);
+	stats_fnt = TTF_OpenFont("/icfpnfs/BERTL/vis_stats.ttf", 9);
 	if (!stats_fnt) {
 		fprintf(stderr,
 			"Unable to open font: %s\n",
 			SDL_GetError());
 		exit(4);
+	}
+
+	score_fnt = TTF_OpenFont("/icfpnfs/BERTL/vis_score.ttf", 15);
+	if (!score_fnt) {
+		fprintf(stderr,
+			"Unable to open font: %s\n",
+			SDL_GetError());
+		exit(5);
 	}
 
 	vis_init_slots(player[0]);
