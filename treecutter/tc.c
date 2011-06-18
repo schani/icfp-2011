@@ -65,6 +65,9 @@ found:	;
 	return n;
 }
 
+
+
+
 void	dump_node(node_t *n) {
 
 	if (n->val) {
@@ -104,6 +107,8 @@ node_t * find_leaf_parent(node_t *n, unsigned num) {
 	return find_leaf_parent(n->right, num);
 }
 
+
+
 unsigned node_num;
 
 void	enumerate_nodes(node_t *n) {
@@ -128,6 +133,9 @@ node_t * find_node(node_t *n, unsigned num) {
 
 	return find_node(n->right, num);
 }
+
+
+
 
 bool	contains_node(node_t *n, node_t *s) {
 	if (n == s)
@@ -159,6 +167,113 @@ void	all_subtrees_with(node_t *n, node_t *s) {
 	}
 }
 
+
+
+
+node_t	dummy = { .val = "X" };
+
+
+typedef	struct _pattern {
+	node_t *pat;
+	unsigned count;
+	unsigned num;
+}	pattern_t;
+
+
+
+
+pattern_t *pattern;
+unsigned pattern_max = 0;
+unsigned pattern_num = 0;
+
+
+
+bool	match_pattern(node_t *a, node_t *b, bool exact)
+{
+	if (a == &dummy) {
+		if (!exact)
+			return true;
+		return (b == &dummy);
+	}
+	if (a->val)
+		return (b->val &&
+			(strcmp(a->val, b->val) == 0));
+	if (b->val)
+		return false;
+	
+	bool t = match_pattern(a->left, b->left, exact);
+	if (!t)
+		return false;
+	return match_pattern(a->right, b->right, exact);
+}
+
+
+node_t * copy_node(node_t *n) {
+	if (!n)
+		return NULL;
+	
+	if (n == &dummy)
+		return &dummy;
+	
+	node_t *c = calloc(1, sizeof(node_t));
+	
+	c->val = n->val;
+	c->left = copy_node(n->left);
+	c->right = copy_node(n->right);
+	return c;
+}
+
+
+void	save_pattern(node_t *n) {
+	
+	if (pattern_num == pattern_max - 1) {
+		pattern_max *= 2;
+		pattern = realloc(pattern, sizeof(pattern_t) * pattern_max);
+	}
+	
+	pattern[pattern_num].pat = copy_node(n);
+	pattern[pattern_num].count = 0;
+	pattern_num++;
+}
+
+bool	pattern_exists(node_t *n) {
+	for (int i=0; i<pattern_num; i++)
+		if (match_pattern(n, pattern[i].pat, true))
+			return true;
+	return false;
+}
+
+
+
+
+void	dump_pattern(pattern_t *p) {
+	printf("# %5d\t", p->count);
+	dump_node(p->pat);
+	printf("\n");
+}
+
+void	dump_all_pattern(void) {
+	for (int i=0; i<pattern_num; i++)
+		dump_pattern(&pattern[i]);
+}
+
+void	count_pattern(pattern_t *p, node_t *n) {
+	if (match_pattern(p->pat, n, false))
+		p->count++;
+	if (n->val)
+		return;
+	count_pattern(p, n->left);
+	count_pattern(p, n->right);
+}
+
+void	count_all_pattern(node_t *n) {
+	for (int i=0; i<pattern_num; i++)
+		count_pattern(&pattern[i], n);
+}
+
+
+
+
 void	all_trees_with(node_t *n, node_t *s) {
 	if (n->val)
 		return;
@@ -167,13 +282,15 @@ void	all_trees_with(node_t *n, node_t *s) {
 	if (contains_node(n, s)) {
 		printf("& ");
 		dump_node(n);
+		if (!pattern_exists(n))
+			save_pattern(n);
 		printf("\n");
 		all_trees_with(n->left, s);
 		all_trees_with(n->right, s);
 	}
 }
 
-node_t	dummy = { .val = "X" };
+
 
 void	cut_leafs(node_t *n) {
 	leaf_num = 1;
@@ -228,6 +345,29 @@ void	cut_branches(node_t *n) {
 	}
 }
 
+
+void	cut_tree(node_t *n, node_t *o) {
+	if (n->val)
+		return;
+	
+	node_t *t;
+		
+	cut_tree(n->left, o);
+	t = n->left;
+	n->left = &dummy;
+	all_trees_with(o, &dummy);
+	n->left = t;
+		
+	cut_tree(n->right, o);
+	t = n->right;
+	n->right = &dummy;
+	all_trees_with(o, &dummy);
+	n->right = t;
+}
+
+
+
+
 void	all_subtrees(node_t *n) {
 	if (!n->val) {
 		if (!n->left->val) {
@@ -260,8 +400,17 @@ int	main(int argc, char *argv[]) {
 
 	node_t *top = split_expr(data, length);
 
+	pattern = calloc(256, sizeof(pattern_t));
+	pattern_max = 256; 
+
+
 	// dump_node(top);
-	all_subtrees(top);
+	
+	cut_tree(top, top);
+	// all_subtrees(top);
+
+	count_all_pattern(top);
+	dump_all_pattern();
 
 	exit(0);
 }
