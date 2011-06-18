@@ -6,7 +6,9 @@ type msg_type =
   | MsgTurn of int
   | MsgPlayer of int
   | MsgWorld of default_world_type
-  | MsgQuestion
+  | MsgQuestionMove
+  | MsgQuestionCard
+  | MsgQuestionSlot
   | MsgMove of (int * turn)
   | MsgReset of int
 
@@ -67,8 +69,12 @@ let std_world_printer msg =
       | MsgWorld world ->
 	  Array.iteri print_slot (fst world);
 	  print_string "(slots {10000,I} are omitted)\n"
-      | MsgQuestion ->
+      | MsgQuestionMove ->
 	  print_string "(1) apply card to slot, or (2) apply slot to card?\n"
+      | MsgQuestionCard ->
+	  print_string "card name?"
+      | MsgQuestionSlot ->
+	  print_string "card slot?"
       | MsgMove (i, turn) ->
 	  printf "player %i %s\n" i (string_of_turn turn)
       | MsgReset i ->
