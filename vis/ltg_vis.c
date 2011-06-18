@@ -14,6 +14,7 @@
 #include <SDL/SDL.h>
 #include <SDL/SDL_ttf.h>
 #include <SDL/SDL_gfxPrimitives.h>
+#include <SDL/SDL_video.h>
 
 extern int usleep(unsigned long usec);
 
@@ -45,7 +46,6 @@ extern int usleep(unsigned long usec);
 #define	SCORE_HEIGHT	38
 
 #define	FONT_HEIGHT	10
-
 
 #define	BASE_VITALITY	(10000 * 256)
 
@@ -359,12 +359,13 @@ TTF_Font *stats_fnt = NULL;
 TTF_Font *score_fnt = NULL;
 
 
+SDL_Surface *logo = NULL;
+
 uint64_t turn = 0;
 int play_id = 0;
 int card_id = 0;
 int slot_id = 0;
 int vitality = 0;
-
 
 
 void	vis_draw_grid(SDL_Surface *dst, unsigned slotw, unsigned sloth)
@@ -922,6 +923,14 @@ int	main(int argc, char *argv[])
 		exit(5);
 	}
 
+	logo = SDL_DisplayFormat(SDL_LoadBMP("/icfpnfs/BERTL/vis_logo.bmp"));
+	if (!logo) {
+		fprintf(stderr,
+			"Unable to open image: %s\n",
+			SDL_GetError());
+		exit(6);
+	}
+
 	vis_init_slots(player[0]);
 	vis_init_slots(player[1]);
 
@@ -946,6 +955,9 @@ int	main(int argc, char *argv[])
 	vis_draw_score(score);
 	vis_draw_stats(stat0, &player_stat[0]);
 	vis_draw_stats(stat1, &player_stat[1]);
+
+	SDL_Rect logoRect = { (VID_WIDTH - logo->w) / 2, (PLAY_HEIGHT + 20 - logo->h) / 2, logo->w, logo->h };
+	SDL_BlitSurface(logo, NULL, screen, &logoRect);
 
 	SDL_Thread *parse_thread = SDL_CreateThread(do_parse, NULL);
 
