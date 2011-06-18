@@ -213,3 +213,7 @@
 			       (str (command-str "echo " command)
 				    "read ; read ; read\n"))
 			     commands)))))
+
+(defn command-script [filename commands]
+  (spit filename
+	(apply str (map #(command-str "" %) commands))))
