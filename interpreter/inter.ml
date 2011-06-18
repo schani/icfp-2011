@@ -159,7 +159,7 @@ let rec inter context world expr =
       let vit,world = context.read_other_vit (255 - s) world in
       if isalive vit then
 	let vit = decr context.life vit in
-	Card(I),context.write_own_vit s vit world
+	Card(I),context.write_other_vit (255 - s) vit world
       else
 	Card(I),world
     else
@@ -316,7 +316,7 @@ let movegetslot = function
   | Left(_,slot) -> slot 
   | Right(slot,_) -> slot 
     
-let apply_move move world context = 
+let apply_move move world context debug = 
   let slot = movegetslot move in 
   let vit,world = context.read_own_vit slot world in
   try 
@@ -331,6 +331,7 @@ let apply_move move world context =
     else
       (context.error "apply: not alive" world; (* assert false; *) world)
   with InterError(msg,w) -> 
+    debug (MsgReset slot);
     context.write_own_field slot (Card I) world
 
 let apply_zombies world context = 
@@ -353,10 +354,9 @@ let apply_zombies world context =
       loop (i+1) world
   in loop 0 world
       
-let apply_player context world player = 
-  let move = player () in
+let apply_player context world move debug = 
   let world = apply_zombies world context in
-  let world = apply_move move world context in 
+  let world = apply_move move world context debug in 
   let count,world = context.count_alive_own world in
   let world = context.end_move world in
   count,world,move
@@ -382,22 +382,22 @@ let play_game context world player0_input player0_output_callback player1_input 
       (printer (MsgTurn i);
        printer (MsgPlayer 0);
        printer (MsgWorld world);
-       let count,world,move = apply_player context world player0_input
-       in
-	 player1_output_callback move;
-	 printer (MsgMove (0, move));
-	 if count = 0 then
-	   1,world
-	 else
-	   (printer (MsgPlayer 1);
-	    printer (MsgWorld world);
-	    let count,world,move = apply_player context world player1_input
-	    in
-	      player0_output_callback move;
-	      printer (MsgMove (1, move));
-	      if count = 0 then 
-		0,world
-	      else
-		loop (i+1) world))
+       let move = player0_input () in
+       printer (MsgMove (0, move));
+       let count,world,move = apply_player context world move printer in
+       player1_output_callback move;
+       if count = 0 then
+	 1,world
+       else
+	 (printer (MsgPlayer 1);
+	  printer (MsgWorld world);
+	  let move = player1_input () in
+	  printer (MsgMove (1, move));
+	  let count,world,move = apply_player context world move printer in
+	  player0_output_callback move;
+	  if count = 0 then 
+	    0,world
+	  else
+	    loop (i+1) world))
   in
     loop startturn world
