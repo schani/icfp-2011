@@ -257,7 +257,9 @@ let rec inter context world expr =
   | Lambda(Error(_),_) -> error context "cannot call error" world
   | Lambda(Lambda(_),_) -> error context "cannot call lambda :-D" world
     
-  | HelpIJ _|HelpI _|AttackIJ _|AttackI _|Kx _ | ZombieI _ | Sfg _ | Sf _ | Error -> 
+  | (HelpIJ _|HelpI _|AttackIJ _|AttackI _|Kx _ | ZombieI _ | Sfg _ | Sf _) as x -> 
+    x,world
+  | Error -> 
     error context "inter: badInsn" world
 
 
