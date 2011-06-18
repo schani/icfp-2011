@@ -59,7 +59,7 @@
       (assert (not (*composites* ski)))
       ski)))
 
-(defn- fixpoint [f max x]
+(defn fixpoint [f max x]
   (loop [x x
 	 i 0]
     (if (>= i max)
