@@ -133,7 +133,7 @@ let rec inter context world expr =
   | Lambda(Sfg(f,g),x) -> 
     let h,world = inter context world (Lambda(f,x)) in
     let y,world = inter context world (Lambda(g,x)) in
-    let z,world = inter context world (Lambda(h,x)) in
+    let z,world = inter context world (Lambda(h,y)) in
     z,world
 
   | Lambda(Card(K),x) -> let x,world = inter context world x in Kx(x),world
