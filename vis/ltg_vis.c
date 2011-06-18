@@ -24,7 +24,7 @@ extern int usleep(unsigned long usec);
 #define	CLAMP(v,a,b)	MIN(b, MAX(a,v))
 
 
-#define	VID_WIDTH	1100
+#define	VID_WIDTH	1240
 #define	VID_HEIGHT	600
 
 #define SLOT_WIDTH	32
@@ -32,11 +32,15 @@ extern int usleep(unsigned long usec);
 
 #define	CARD_HEIGHT	40
 
+#define	VITA_WIDTH	12
+
 #define	PLAY_WIDTH	((SLOT_WIDTH * 16) + 1)
 #define	PLAY_HEIGHT	((SLOT_HEIGHT * 16) + 1)
 
 #define	FONT_HEIGHT	10
 
+
+#define	BASE_VITALITY	(10000 * 256)
 
 
 void	str_free(char *str)
@@ -53,6 +57,45 @@ char *	str_copy(char *str)
 		memcpy(copy, str, len + 1);
 	return copy;
 }
+
+
+void	hsv2rgb(unsigned h, unsigned s, unsigned v,
+	unsigned *r, unsigned *g, unsigned *b)
+{
+	if (s == 0) {
+		*r = *g = *b = v;
+	} else {
+		float hh = (float)h / 60;
+		float ss = (float)s / 255;
+		int i = floor(hh);
+		float f = hh - i;
+		float p = v * (1 - ss);
+		float q = v * (1 - ss * f);
+		float t = v * (1 - ss * (1 - f));
+
+		switch (i) {
+		default:
+			*r = v; *g = p; *b = q;
+			break;
+		case 0:
+			*r = v; *g = t; *b = p;
+			break;
+		case 1:
+			*r = q; *g = v; *b = p;
+			break;
+		case 2:
+			*r = p; *g = v; *b = t;
+			break;
+		case 3:
+			*r = p; *g = q; *b = v;
+			break;
+		case 4:
+			*r = t; *g = p; *b = v;
+			break;
+		}
+	}
+}
+
 
 
 
@@ -375,7 +418,7 @@ void	vis_draw_slot(SDL_Surface *dst, unsigned x, unsigned y, slot_t *slot)
 	unsigned yp = y * SLOT_HEIGHT + 1;
 
 	unsigned r, g, b;
-	
+
 	vis_slot_background(slot, &r, &g, &b);
 
 	if (slot->flags & FL_CHANGED) {
@@ -481,6 +524,20 @@ void	vis_draw_cards(SDL_Surface *dst)
 }
 
 
+void	vis_draw_vitality(SDL_Surface *dst, uint64_t vitality)
+{
+	float val = MIN((float)vitality / BASE_VITALITY, 2.0);
+
+	unsigned height = val * PLAY_HEIGHT / 2;
+	unsigned hinv = PLAY_HEIGHT - height;
+
+	unsigned r, g, b;
+
+	hsv2rgb(val * 90, 255, 255, &r, &g, &b);
+
+	boxRGBA(dst, 0, 0, VITA_WIDTH, hinv, 64, 64, 64, 255);
+	boxRGBA(dst, 0, hinv, VITA_WIDTH, hinv + height, r, g, b, 255);
+}
 
 
 
@@ -697,7 +754,6 @@ int	main(int argc, char *argv[])
 	}
 	atexit(SDL_Quit);
 
-
 	screen = SDL_SetVideoMode(VID_WIDTH, VID_HEIGHT, 16,
 		SDL_DOUBLEBUF | SDL_SWSURFACE);
 
@@ -712,6 +768,14 @@ int	main(int argc, char *argv[])
 		PLAY_WIDTH, CARD_HEIGHT + 1, 32, 0, 0, 0, 0);
 	card1 = SDL_CreateRGBSurface(SDL_SWSURFACE,
 		PLAY_WIDTH, CARD_HEIGHT + 1, 32, 0, 0, 0, 0);
+
+	SDL_Surface *vita0, *vita1;
+	vita0 = SDL_CreateRGBSurface(SDL_SWSURFACE,
+		VITA_WIDTH, PLAY_HEIGHT, 32, 0, 0, 0, 0);
+	vita1 = SDL_CreateRGBSurface(SDL_SWSURFACE,
+		VITA_WIDTH, PLAY_HEIGHT, 32, 0, 0, 0, 0);
+
+
 
 	SDL_WM_SetCaption("LTG Sim", "LTG Sim");
 
@@ -748,6 +812,9 @@ int	main(int argc, char *argv[])
 	vis_draw_cards(card0);
 	vis_draw_cards(card1);
 
+	vis_draw_vitality(vita0, player_stat[0].total_vitality);
+	vis_draw_vitality(vita1, player_stat[1].total_vitality);
+
 	SDL_Thread *parse_thread = SDL_CreateThread(do_parse, NULL);
 
 	unsigned frame = 0;
@@ -759,9 +826,6 @@ int	main(int argc, char *argv[])
 		vis_calc_stats(&player_stat[1], player[1]);
 		vis_draw_slots(play1, player[1]);
 
-		vis_draw_cards(card0);
-		vis_draw_cards(card1);
-
 		SDL_Rect psrcRect = {0, 0, PLAY_WIDTH, PLAY_HEIGHT };
 		SDL_Rect play0Rect = {10, 10, PLAY_WIDTH, PLAY_HEIGHT };
 		SDL_Rect play1Rect = {VID_WIDTH - 10 - PLAY_WIDTH, 10, PLAY_WIDTH, PLAY_HEIGHT };
@@ -769,12 +833,25 @@ int	main(int argc, char *argv[])
 		SDL_BlitSurface(play0, &psrcRect, screen, &play0Rect);
 		SDL_BlitSurface(play1, &psrcRect, screen, &play1Rect);
 
+		vis_draw_cards(card0);
+		vis_draw_cards(card1);
+
 		SDL_Rect csrcRect = {0, 0, PLAY_WIDTH, CARD_HEIGHT + 1 };
 		SDL_Rect card0Rect = {10, 20 + PLAY_HEIGHT, PLAY_WIDTH, CARD_HEIGHT + 1 };
 		SDL_Rect card1Rect = {VID_WIDTH - 10 - PLAY_WIDTH, 20 + PLAY_HEIGHT, PLAY_WIDTH, CARD_HEIGHT + 1 };
 
 		SDL_BlitSurface(card0, &csrcRect, screen, &card0Rect);
 		SDL_BlitSurface(card1, &csrcRect, screen, &card1Rect);
+
+		vis_draw_vitality(vita0, player_stat[0].total_vitality);
+		vis_draw_vitality(vita1, player_stat[1].total_vitality);
+
+		SDL_Rect vsrcRect = {0, 0, VITA_WIDTH, PLAY_HEIGHT };
+		SDL_Rect vita0Rect = {20 + PLAY_WIDTH, 10, VITA_WIDTH, PLAY_HEIGHT };
+		SDL_Rect vita1Rect = {VID_WIDTH - 20 - PLAY_WIDTH - VITA_WIDTH, 10, VITA_WIDTH, PLAY_HEIGHT };
+
+		SDL_BlitSurface(vita0, &vsrcRect, screen, &vita0Rect);
+		SDL_BlitSurface(vita1, &vsrcRect, screen, &vita1Rect);
 
 		SDL_Flip(screen); //Refresh the screen
 
