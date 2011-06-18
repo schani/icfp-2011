@@ -7,7 +7,7 @@
 (if-match [[[?a ?b] & ?rest] [[1 2] 3 4]]
 	  [a b rest])
 
-(defmacro- match-lambda [expr &{:keys [lambda apply primitive]}]
+(defmacro match-lambda [expr &{:keys [lambda apply primitive]}]
   (if-match [[[?M ?N] & ?apply-exprs] apply]
 	    (if-match [[[?x ?y] & ?lambda-exprs] lambda]
 		      (if-match [[?p & ?primitive-exprs] primitive]
