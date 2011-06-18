@@ -4,15 +4,15 @@
 	clojure.contrib.def
 	clojure.contrib.str-utils))
 
-(if-match [[[?a ?b] & ?rest] [[1 2] 3 4]]
-	  [a b rest])
+(defn realseq? [x]
+  (or (seq? x) (vector? x)))
 
 (defmacro match-lambda [expr &{:keys [lambda apply primitive]}]
   (if-match [[[?M ?N] & ?apply-exprs] apply]
 	    (if-match [[[?x ?y] & ?lambda-exprs] lambda]
 		      (if-match [[?p & ?primitive-exprs] primitive]
 				`(let [expr# ~expr]
-				   (if (seq? expr#)
+				   (if (realseq? expr#)
 				     (if (= (first expr#) :fn)
 				       (do
 					 (assert (= (count expr#) 3))
@@ -85,7 +85,7 @@
 			    x)))
 
 (defn optimize-ski [ski]
-  (if (seq? ski)
+  (if (realseq? ski)
     (let [ski (map optimize-ski ski)]
       (or
        (if-match [[[?S [?K ?L]] [?M ?x]] ski]
