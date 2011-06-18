@@ -76,84 +76,12 @@ echo 6
 echo S
 read ; read ; read
 echo 1
-echo put
-echo 7
-read ; read ; read
-echo 2
-echo 7
-echo S
-read ; read ; read
-echo 1
 echo K
-echo 7
+echo 6
 read ; read ; read
 echo 1
 echo S
-echo 7
-read ; read ; read
-echo 1
-echo put
-echo 0
-read ; read ; read
-echo 2
-echo 0
-echo S
-read ; read ; read
-echo 1
-echo K
-echo 0
-read ; read ; read
-echo 1
-echo K
-echo 0
-read ; read ; read
-echo 1
-echo K
-echo 7
-read ; read ; read
-echo 1
-echo S
-echo 7
-read ; read ; read
-echo 2
-echo 7
-echo get
-read ; read ; read
-echo 2
-echo 7
-echo zero
-read ; read ; read
-echo 1
-echo put
-echo 0
-read ; read ; read
-echo 2
-echo 0
-echo zero
-read ; read ; read
-echo 1
-echo succ
-echo 0
-read ; read ; read
-echo 1
-echo dbl
-echo 0
-read ; read ; read
-echo 1
-echo succ
-echo 0
-read ; read ; read
-echo 1
-echo dbl
-echo 0
-read ; read ; read
-echo 1
-echo succ
-echo 0
-read ; read ; read
-echo 1
-echo get
-echo 0
+echo 6
 read ; read ; read
 echo 1
 echo K
@@ -162,14 +90,6 @@ read ; read ; read
 echo 1
 echo S
 echo 6
-read ; read ; read
-echo 2
-echo 6
-echo get
-read ; read ; read
-echo 2
-echo 6
-echo zero
 read ; read ; read
 echo 1
 echo K
@@ -308,80 +228,12 @@ echo 7
 echo S
 read ; read ; read
 echo 1
-echo put
-echo 8
-read ; read ; read
-echo 2
-echo 8
-echo S
-read ; read ; read
-echo 1
 echo K
-echo 8
+echo 7
 read ; read ; read
 echo 1
 echo S
-echo 8
-read ; read ; read
-echo 1
-echo put
-echo 0
-read ; read ; read
-echo 2
-echo 0
-echo S
-read ; read ; read
-echo 1
-echo K
-echo 0
-read ; read ; read
-echo 1
-echo K
-echo 0
-read ; read ; read
-echo 1
-echo K
-echo 8
-read ; read ; read
-echo 1
-echo S
-echo 8
-read ; read ; read
-echo 2
-echo 8
-echo get
-read ; read ; read
-echo 2
-echo 8
-echo zero
-read ; read ; read
-echo 1
-echo put
-echo 0
-read ; read ; read
-echo 2
-echo 0
-echo zero
-read ; read ; read
-echo 1
-echo succ
-echo 0
-read ; read ; read
-echo 1
-echo dbl
-echo 0
-read ; read ; read
-echo 1
-echo dbl
-echo 0
-read ; read ; read
-echo 1
-echo dbl
-echo 0
-read ; read ; read
-echo 1
-echo get
-echo 0
+echo 7
 read ; read ; read
 echo 1
 echo K
@@ -390,14 +242,6 @@ read ; read ; read
 echo 1
 echo S
 echo 7
-read ; read ; read
-echo 2
-echo 7
-echo get
-read ; read ; read
-echo 2
-echo 7
-echo zero
 read ; read ; read
 echo 1
 echo K
@@ -540,84 +384,12 @@ echo 8
 echo S
 read ; read ; read
 echo 1
-echo put
-echo 9
-read ; read ; read
-echo 2
-echo 9
-echo S
-read ; read ; read
-echo 1
 echo K
-echo 9
+echo 8
 read ; read ; read
 echo 1
 echo S
-echo 9
-read ; read ; read
-echo 1
-echo put
-echo 0
-read ; read ; read
-echo 2
-echo 0
-echo S
-read ; read ; read
-echo 1
-echo K
-echo 0
-read ; read ; read
-echo 1
-echo K
-echo 0
-read ; read ; read
-echo 1
-echo K
-echo 9
-read ; read ; read
-echo 1
-echo S
-echo 9
-read ; read ; read
-echo 2
-echo 9
-echo get
-read ; read ; read
-echo 2
-echo 9
-echo zero
-read ; read ; read
-echo 1
-echo put
-echo 0
-read ; read ; read
-echo 2
-echo 0
-echo zero
-read ; read ; read
-echo 1
-echo succ
-echo 0
-read ; read ; read
-echo 1
-echo dbl
-echo 0
-read ; read ; read
-echo 1
-echo dbl
-echo 0
-read ; read ; read
-echo 1
-echo dbl
-echo 0
-read ; read ; read
-echo 1
-echo succ
-echo 0
-read ; read ; read
-echo 1
-echo get
-echo 0
+echo 8
 read ; read ; read
 echo 1
 echo K
@@ -626,14 +398,6 @@ read ; read ; read
 echo 1
 echo S
 echo 8
-read ; read ; read
-echo 2
-echo 8
-echo get
-read ; read ; read
-echo 2
-echo 8
-echo zero
 read ; read ; read
 echo 1
 echo K
@@ -776,84 +540,12 @@ echo 9
 echo S
 read ; read ; read
 echo 1
-echo put
-echo 10
-read ; read ; read
-echo 2
-echo 10
-echo S
-read ; read ; read
-echo 1
 echo K
-echo 10
+echo 9
 read ; read ; read
 echo 1
 echo S
-echo 10
-read ; read ; read
-echo 1
-echo put
-echo 0
-read ; read ; read
-echo 2
-echo 0
-echo S
-read ; read ; read
-echo 1
-echo K
-echo 0
-read ; read ; read
-echo 1
-echo K
-echo 0
-read ; read ; read
-echo 1
-echo K
-echo 10
-read ; read ; read
-echo 1
-echo S
-echo 10
-read ; read ; read
-echo 2
-echo 10
-echo get
-read ; read ; read
-echo 2
-echo 10
-echo zero
-read ; read ; read
-echo 1
-echo put
-echo 0
-read ; read ; read
-echo 2
-echo 0
-echo zero
-read ; read ; read
-echo 1
-echo succ
-echo 0
-read ; read ; read
-echo 1
-echo dbl
-echo 0
-read ; read ; read
-echo 1
-echo dbl
-echo 0
-read ; read ; read
-echo 1
-echo succ
-echo 0
-read ; read ; read
-echo 1
-echo dbl
-echo 0
-read ; read ; read
-echo 1
-echo get
-echo 0
+echo 9
 read ; read ; read
 echo 1
 echo K
@@ -862,14 +554,6 @@ read ; read ; read
 echo 1
 echo S
 echo 9
-read ; read ; read
-echo 2
-echo 9
-echo get
-read ; read ; read
-echo 2
-echo 9
-echo zero
 read ; read ; read
 echo 1
 echo K
@@ -1012,88 +696,12 @@ echo 10
 echo S
 read ; read ; read
 echo 1
-echo put
-echo 11
-read ; read ; read
-echo 2
-echo 11
-echo S
-read ; read ; read
-echo 1
 echo K
-echo 11
+echo 10
 read ; read ; read
 echo 1
 echo S
-echo 11
-read ; read ; read
-echo 1
-echo put
-echo 0
-read ; read ; read
-echo 2
-echo 0
-echo S
-read ; read ; read
-echo 1
-echo K
-echo 0
-read ; read ; read
-echo 1
-echo K
-echo 0
-read ; read ; read
-echo 1
-echo K
-echo 11
-read ; read ; read
-echo 1
-echo S
-echo 11
-read ; read ; read
-echo 2
-echo 11
-echo get
-read ; read ; read
-echo 2
-echo 11
-echo zero
-read ; read ; read
-echo 1
-echo put
-echo 0
-read ; read ; read
-echo 2
-echo 0
-echo zero
-read ; read ; read
-echo 1
-echo succ
-echo 0
-read ; read ; read
-echo 1
-echo dbl
-echo 0
-read ; read ; read
-echo 1
-echo dbl
-echo 0
-read ; read ; read
-echo 1
-echo succ
-echo 0
-read ; read ; read
-echo 1
-echo dbl
-echo 0
-read ; read ; read
-echo 1
-echo succ
-echo 0
-read ; read ; read
-echo 1
-echo get
-echo 0
+echo 10
 read ; read ; read
 echo 1
 echo K
@@ -1102,14 +710,6 @@ read ; read ; read
 echo 1
 echo S
 echo 10
-read ; read ; read
-echo 2
-echo 10
-echo get
-read ; read ; read
-echo 2
-echo 10
-echo zero
 read ; read ; read
 echo 1
 echo K
@@ -1256,84 +856,12 @@ echo 11
 echo S
 read ; read ; read
 echo 1
-echo put
-echo 12
-read ; read ; read
-echo 2
-echo 12
-echo S
-read ; read ; read
-echo 1
 echo K
-echo 12
+echo 11
 read ; read ; read
 echo 1
 echo S
-echo 12
-read ; read ; read
-echo 1
-echo put
-echo 0
-read ; read ; read
-echo 2
-echo 0
-echo S
-read ; read ; read
-echo 1
-echo K
-echo 0
-read ; read ; read
-echo 1
-echo K
-echo 0
-read ; read ; read
-echo 1
-echo K
-echo 12
-read ; read ; read
-echo 1
-echo S
-echo 12
-read ; read ; read
-echo 2
-echo 12
-echo get
-read ; read ; read
-echo 2
-echo 12
-echo zero
-read ; read ; read
-echo 1
-echo put
-echo 0
-read ; read ; read
-echo 2
-echo 0
-echo zero
-read ; read ; read
-echo 1
-echo succ
-echo 0
-read ; read ; read
-echo 1
-echo dbl
-echo 0
-read ; read ; read
-echo 1
-echo succ
-echo 0
-read ; read ; read
-echo 1
-echo dbl
-echo 0
-read ; read ; read
-echo 1
-echo dbl
-echo 0
-read ; read ; read
-echo 1
-echo get
-echo 0
+echo 11
 read ; read ; read
 echo 1
 echo K
@@ -1342,14 +870,6 @@ read ; read ; read
 echo 1
 echo S
 echo 11
-read ; read ; read
-echo 2
-echo 11
-echo get
-read ; read ; read
-echo 2
-echo 11
-echo zero
 read ; read ; read
 echo 1
 echo K
@@ -1500,88 +1020,12 @@ echo 12
 echo S
 read ; read ; read
 echo 1
-echo put
-echo 13
-read ; read ; read
-echo 2
-echo 13
-echo S
-read ; read ; read
-echo 1
 echo K
-echo 13
+echo 12
 read ; read ; read
 echo 1
 echo S
-echo 13
-read ; read ; read
-echo 1
-echo put
-echo 0
-read ; read ; read
-echo 2
-echo 0
-echo S
-read ; read ; read
-echo 1
-echo K
-echo 0
-read ; read ; read
-echo 1
-echo K
-echo 0
-read ; read ; read
-echo 1
-echo K
-echo 13
-read ; read ; read
-echo 1
-echo S
-echo 13
-read ; read ; read
-echo 2
-echo 13
-echo get
-read ; read ; read
-echo 2
-echo 13
-echo zero
-read ; read ; read
-echo 1
-echo put
-echo 0
-read ; read ; read
-echo 2
-echo 0
-echo zero
-read ; read ; read
-echo 1
-echo succ
-echo 0
-read ; read ; read
-echo 1
-echo dbl
-echo 0
-read ; read ; read
-echo 1
-echo succ
-echo 0
-read ; read ; read
-echo 1
-echo dbl
-echo 0
-read ; read ; read
-echo 1
-echo dbl
-echo 0
-read ; read ; read
-echo 1
-echo succ
-echo 0
-read ; read ; read
-echo 1
-echo get
-echo 0
+echo 12
 read ; read ; read
 echo 1
 echo K
@@ -1590,14 +1034,6 @@ read ; read ; read
 echo 1
 echo S
 echo 12
-read ; read ; read
-echo 2
-echo 12
-echo get
-read ; read ; read
-echo 2
-echo 12
-echo zero
 read ; read ; read
 echo 1
 echo K
@@ -2588,84 +2024,12 @@ echo 9
 echo S
 read ; read ; read
 echo 1
-echo put
-echo 10
-read ; read ; read
-echo 2
-echo 10
-echo S
-read ; read ; read
-echo 1
 echo K
-echo 10
+echo 9
 read ; read ; read
 echo 1
 echo S
-echo 10
-read ; read ; read
-echo 1
-echo put
-echo 0
-read ; read ; read
-echo 2
-echo 0
-echo S
-read ; read ; read
-echo 1
-echo K
-echo 0
-read ; read ; read
-echo 1
-echo K
-echo 0
-read ; read ; read
-echo 1
-echo K
-echo 10
-read ; read ; read
-echo 1
-echo S
-echo 10
-read ; read ; read
-echo 2
-echo 10
-echo get
-read ; read ; read
-echo 2
-echo 10
-echo zero
-read ; read ; read
-echo 1
-echo put
-echo 0
-read ; read ; read
-echo 2
-echo 0
-echo zero
-read ; read ; read
-echo 1
-echo succ
-echo 0
-read ; read ; read
-echo 1
-echo dbl
-echo 0
-read ; read ; read
-echo 1
-echo dbl
-echo 0
-read ; read ; read
-echo 1
-echo succ
-echo 0
-read ; read ; read
-echo 1
-echo dbl
-echo 0
-read ; read ; read
-echo 1
-echo get
-echo 0
+echo 9
 read ; read ; read
 echo 1
 echo K
@@ -2674,14 +2038,6 @@ read ; read ; read
 echo 1
 echo S
 echo 9
-read ; read ; read
-echo 2
-echo 9
-echo get
-read ; read ; read
-echo 2
-echo 9
-echo zero
 read ; read ; read
 echo 1
 echo put
@@ -2716,88 +2072,12 @@ echo 12
 echo S
 read ; read ; read
 echo 1
-echo put
-echo 13
-read ; read ; read
-echo 2
-echo 13
-echo S
-read ; read ; read
-echo 1
 echo K
-echo 13
+echo 12
 read ; read ; read
 echo 1
 echo S
-echo 13
-read ; read ; read
-echo 1
-echo put
-echo 0
-read ; read ; read
-echo 2
-echo 0
-echo S
-read ; read ; read
-echo 1
-echo K
-echo 0
-read ; read ; read
-echo 1
-echo K
-echo 0
-read ; read ; read
-echo 1
-echo K
-echo 13
-read ; read ; read
-echo 1
-echo S
-echo 13
-read ; read ; read
-echo 2
-echo 13
-echo get
-read ; read ; read
-echo 2
-echo 13
-echo zero
-read ; read ; read
-echo 1
-echo put
-echo 0
-read ; read ; read
-echo 2
-echo 0
-echo zero
-read ; read ; read
-echo 1
-echo succ
-echo 0
-read ; read ; read
-echo 1
-echo dbl
-echo 0
-read ; read ; read
-echo 1
-echo succ
-echo 0
-read ; read ; read
-echo 1
-echo dbl
-echo 0
-read ; read ; read
-echo 1
-echo dbl
-echo 0
-read ; read ; read
-echo 1
-echo succ
-echo 0
-read ; read ; read
-echo 1
-echo get
-echo 0
+echo 12
 read ; read ; read
 echo 1
 echo K
@@ -2806,14 +2086,6 @@ read ; read ; read
 echo 1
 echo S
 echo 12
-read ; read ; read
-echo 2
-echo 12
-echo get
-read ; read ; read
-echo 2
-echo 12
-echo zero
 read ; read ; read
 echo 1
 echo put
@@ -2848,84 +2120,12 @@ echo 15
 echo S
 read ; read ; read
 echo 1
-echo put
-echo 16
-read ; read ; read
-echo 2
-echo 16
-echo S
-read ; read ; read
-echo 1
 echo K
-echo 16
+echo 15
 read ; read ; read
 echo 1
 echo S
-echo 16
-read ; read ; read
-echo 1
-echo put
-echo 0
-read ; read ; read
-echo 2
-echo 0
-echo S
-read ; read ; read
-echo 1
-echo K
-echo 0
-read ; read ; read
-echo 1
-echo K
-echo 0
-read ; read ; read
-echo 1
-echo K
-echo 16
-read ; read ; read
-echo 1
-echo S
-echo 16
-read ; read ; read
-echo 2
-echo 16
-echo get
-read ; read ; read
-echo 2
-echo 16
-echo zero
-read ; read ; read
-echo 1
-echo put
-echo 0
-read ; read ; read
-echo 2
-echo 0
-echo zero
-read ; read ; read
-echo 1
-echo succ
-echo 0
-read ; read ; read
-echo 1
-echo dbl
-echo 0
-read ; read ; read
-echo 1
-echo dbl
-echo 0
-read ; read ; read
-echo 1
-echo dbl
-echo 0
-read ; read ; read
-echo 1
-echo dbl
-echo 0
-read ; read ; read
-echo 1
-echo get
-echo 0
+echo 15
 read ; read ; read
 echo 1
 echo K
@@ -2934,14 +2134,6 @@ read ; read ; read
 echo 1
 echo S
 echo 15
-read ; read ; read
-echo 2
-echo 15
-echo get
-read ; read ; read
-echo 2
-echo 15
-echo zero
 read ; read ; read
 echo 1
 echo put
@@ -4128,88 +3320,12 @@ echo 10
 echo S
 read ; read ; read
 echo 1
-echo put
-echo 11
-read ; read ; read
-echo 2
-echo 11
-echo S
-read ; read ; read
-echo 1
 echo K
-echo 11
+echo 10
 read ; read ; read
 echo 1
 echo S
-echo 11
-read ; read ; read
-echo 1
-echo put
-echo 0
-read ; read ; read
-echo 2
-echo 0
-echo S
-read ; read ; read
-echo 1
-echo K
-echo 0
-read ; read ; read
-echo 1
-echo K
-echo 0
-read ; read ; read
-echo 1
-echo K
-echo 11
-read ; read ; read
-echo 1
-echo S
-echo 11
-read ; read ; read
-echo 2
-echo 11
-echo get
-read ; read ; read
-echo 2
-echo 11
-echo zero
-read ; read ; read
-echo 1
-echo put
-echo 0
-read ; read ; read
-echo 2
-echo 0
-echo zero
-read ; read ; read
-echo 1
-echo succ
-echo 0
-read ; read ; read
-echo 1
-echo dbl
-echo 0
-read ; read ; read
-echo 1
-echo dbl
-echo 0
-read ; read ; read
-echo 1
-echo succ
-echo 0
-read ; read ; read
-echo 1
-echo dbl
-echo 0
-read ; read ; read
-echo 1
-echo succ
-echo 0
-read ; read ; read
-echo 1
-echo get
-echo 0
+echo 10
 read ; read ; read
 echo 1
 echo K
@@ -4218,14 +3334,6 @@ read ; read ; read
 echo 1
 echo S
 echo 10
-read ; read ; read
-echo 2
-echo 10
-echo get
-read ; read ; read
-echo 2
-echo 10
-echo zero
 read ; read ; read
 echo 1
 echo put
@@ -5249,8 +4357,142 @@ while true ; do
     echo 64
     echo zero
     read ; read ; read
+    echo 1
+    echo succ
+    echo 64
+    read ; read ; read
+    echo 1
+    echo dbl
+    echo 64
+    read ; read ; read
+    echo 1
+    echo succ
+    echo 64
+    read ; read ; read
+    echo 1
+    echo dbl
+    echo 64
+    read ; read ; read
+    echo 1
+    echo succ
+    echo 64
+    read ; read ; read
+    echo 1
+    echo dbl
+    echo 64
+    read ; read ; read
+    echo 1
+    echo succ
+    echo 64
+    read ; read ; read
+    echo 1
+    echo dbl
+    echo 64
+    read ; read ; read
+    echo 1
+    echo succ
+    echo 64
+    read ; read ; read
+    echo 1
+    echo dbl
+    echo 64
+    read ; read ; read
+    echo 1
+    echo succ
+    echo 64
+    read ; read ; read
+    echo 1
+    echo dbl
+    echo 64
+    read ; read ; read
+    echo 1
+    echo succ
+    echo 64
+    read ; read ; read
+    echo 1
+    echo dbl
+    echo 64
+    read ; read ; read
+    echo 1
+    echo succ
+    echo 64
+    read ; read ; read
 
-    for n in `seq 0 255` ; do
+    echo 2
+    echo 65
+    echo I
+    read ; read ; read
+    echo 2
+    echo 65
+    echo I
+    read ; read ; read
+    echo 2
+    echo 65
+    echo I
+    read ; read ; read
+    echo 2
+    echo 65
+    echo I
+    read ; read ; read
+    echo 2
+    echo 65
+    echo I
+    read ; read ; read
+    echo 2
+    echo 65
+    echo I
+    read ; read ; read
+    echo 2
+    echo 65
+    echo I
+    read ; read ; read
+    echo 2
+    echo 65
+    echo I
+    read ; read ; read
+    echo 2
+    echo 65
+    echo I
+    read ; read ; read
+    echo 2
+    echo 65
+    echo I
+    read ; read ; read
+    echo 2
+    echo 65
+    echo I
+    read ; read ; read
+    echo 2
+    echo 65
+    echo I
+    read ; read ; read
+    echo 2
+    echo 65
+    echo I
+    read ; read ; read
+    echo 2
+    echo 65
+    echo I
+    read ; read ; read
+    echo 2
+    echo 65
+    echo I
+    read ; read ; read
+    echo 2
+    echo 65
+    echo I
+    read ; read ; read
+
+    echo 1
+    echo put
+    echo 64
+    read ; read ; read
+    echo 2
+    echo 64
+    echo zero
+    read ; read ; read
+
+    for i in `seq 0 255` ; do
 	echo 2
 	echo 65
 	echo I

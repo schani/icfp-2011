@@ -89,8 +89,11 @@
     (let [ski (map optimize-ski ski)]
       (or
        (if-match [[[?S [?K ?L]] [?M ?x]] ski]
-		 (if (and (= S :S) (= K :K) (= L :K) (= M :K))
+		 (if (= [S K L M] [:S :K :K :K])
 		   `(:K (:K ~x))))
+       (if-match [[[?S [?K ?T]] [?L [?M ?U]]] ski]
+		 (if (= [S T U K L M] [:S :S :S :K :K :K])
+		   `(:K (:S (:K :S)))))
        ski))
     ski))
 

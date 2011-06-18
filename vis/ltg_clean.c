@@ -59,10 +59,17 @@ void	parse_slot(char *line)
 {
 	static char expr[65535];
 	int n = sscanf(line, "%d={%d,%[^}]", &slot_id, &vitality, expr);
-	if (n == 3) {
+	if (n == 3)
 		printf("[%d]: |%d| %s\n", slot_id, vitality, expr);  
-	}
 	return;	
+}
+
+void	parse_slot_reset(char *line)
+{
+	int n = sscanf(line, "slot %d reset to I", &slot_id);
+	if (n == 1)
+		printf("slot %d reset\n", slot_id);
+	return;
 }
 
 void	parse_expr(char *line)
@@ -114,6 +121,10 @@ void	parse_input(char *line)
 		parse_exception(line);
 		break;
 
+	case 's':	/* slot ignored */
+		parse_slot_reset(line);
+		break;
+
 	case '0':
 	case '1':
 	case '2':
@@ -127,7 +138,6 @@ void	parse_input(char *line)
 		parse_slot(line);
 		break;
 
-	case 's':	/* slot ignored */
 	case 'c':	/* card ignored */
 	default:	/* ignored */
 		break;

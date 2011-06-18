@@ -58,26 +58,29 @@ let rec string_of_expr = function
 
 let print_slot i = function
   | 10000, Card I -> ()
-  | vir, expr -> printf "%i={%i,%s}\n" i vir (string_of_expr expr)
+  | vir, expr -> fprintf stderr "%i={%i,%s}\n" i vir (string_of_expr expr)
 
 let std_world_printer msg =
   begin
     match msg with
-      | MsgStartup -> print_string "Ocaml: The Gathering\n"
-      | MsgTurn i -> printf "###### turn %i\n" i
-      | MsgPlayer i -> printf "*** player %i's turn, with slots:\n" i
+      | MsgStartup -> output_string stderr "Ocaml: The Gathering\n"
+      | MsgTurn i -> fprintf stderr "###### turn %i\n" i
+      | MsgPlayer i -> fprintf stderr "*** player %i's turn, with slots:\n" i
       | MsgWorld world ->
 	  Array.iteri print_slot (fst world);
-	  print_string "(slots {10000,I} are omitted)\n"
+	  output_string stderr "(slots {10000,I} are omitted)\n"
       | MsgQuestionMove ->
-	  print_string "(1) apply card to slot, or (2) apply slot to card?\n"
+	  output_string stderr "(1) apply card to slot, or (2) apply slot to card?\n"
       | MsgQuestionCard ->
-	  print_string "card name?\n"
+	  output_string stderr "card name?\n"
       | MsgQuestionSlot ->
-	  print_string "card slot?\n"
+	  output_string stderr "card slot?\n"
       | MsgMove (i, turn) ->
-	  printf "player %i %s\n" i (string_of_turn turn)
+	  fprintf stderr "player %i %s\n" i (string_of_turn turn)
       | MsgReset i ->
-	  printf "slot %i reset to I\n" i
+	  fprintf stderr "slot %i reset to I\n" i
   end;
-  flush stdout
+  flush stderr
+
+let quiet_printer _ =
+  ()
