@@ -353,8 +353,7 @@ let apply_zombies world context =
       loop (i+1) world
   in loop 0 world
       
-let apply_player context world player = 
-  let move = player () in
+let apply_player context world move = 
   let world = apply_zombies world context in
   let world = apply_move move world context in 
   let count,world = context.count_alive_own world in
@@ -383,23 +382,23 @@ let play_game context world player0_input player0_output_callback player1_input 
        printer (MsgPlayer 0);
        printer (MsgWorld world);
        printer MsgQuestion;
-       let count,world,move = apply_player context world player0_input
-       in
-	 player1_output_callback move;
-	 printer (MsgMove (0, move));
-	 if count = 0 then
-	   1,world
-	 else
-	   (printer (MsgPlayer 1);
-	    printer (MsgWorld world);
-	    printer MsgQuestion;
-	    let count,world,move = apply_player context world player1_input
-	    in
-	      player0_output_callback move;
-	      printer (MsgMove (1, move));
-	      if count = 0 then 
-		0,world
-	      else
-		loop (i+1) world))
+       let move = player0_input () in
+       printer (MsgMove (0, move));
+       let count,world,move = apply_player context world move in
+       player1_output_callback move;
+       if count = 0 then
+	 1,world
+       else
+	 (printer (MsgPlayer 1);
+	  printer (MsgWorld world);
+	  printer MsgQuestion;
+	  let move = player1_input () in
+	  printer (MsgMove (1, move));
+	  let count,world,move = apply_player context world move in
+	  player0_output_callback move;
+	  if count = 0 then 
+	    0,world
+	  else
+	    loop (i+1) world))
   in
     loop startturn world
