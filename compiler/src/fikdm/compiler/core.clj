@@ -2,6 +2,7 @@
   (:use matchure
 	clojure.set
 	clojure.contrib.def
+	clojure.contrib.logging
 	clojure.contrib.str-utils))
 
 (defn realseq? [x]
@@ -94,6 +95,14 @@
        (if-match [[[?S [?K ?T]] [?L [?M ?U]]] ski]
 		 (if (= [S T U K L M] [:S :S :S :K :K :K])
 		   `(:K (:S (:K :S)))))
+       (if-match [[[
+		    [?S1 [?K ?S2]]
+		    [?S3 ?x]]
+		   ?y] ski]
+		 (if (= [S1 S2 S3 K] [:S :S :S :K])
+		   (do
+		     (info "optimize")
+		     `(:S ((:S ~x) ~y)))))
        ski))
     ski))
 
