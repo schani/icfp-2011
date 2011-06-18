@@ -5,7 +5,9 @@ type msg_type =
   | MsgTurn of int
   | MsgPlayer of int
   | MsgWorld of default_world_type
-  | MsgQuestion
+  | MsgQuestionMove
+  | MsgQuestionCard
+  | MsgQuestionSlot
   | MsgMove of (int * turn)
   | MsgReset of int
 
