@@ -210,10 +210,3 @@
 			       (str (command-str "echo " command)
 				    "read ; read ; read\n"))
 			     commands)))))
-
-(defn make-loop [side-effect]
-  `(((:S :I) :I)
-    (:fn [f#]
-	 ((:fn [y#]
-	    (((:S :I) :I) f#))
-	  ~side-effect))))
