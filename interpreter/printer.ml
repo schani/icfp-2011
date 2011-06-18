@@ -81,3 +81,6 @@ let std_world_printer msg =
 	  printf "slot %i reset to I\n" i
   end;
   flush stdout
+
+let quiet_printer _ =
+  ()

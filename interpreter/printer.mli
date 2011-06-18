@@ -20,4 +20,7 @@ val string_of_turn: turn -> string
 (* world printer that prints like the demo tool *)
 val std_world_printer: msg_type -> unit
 
+(* discards all *)
+val quiet_printer: msg_type -> unit
+
 val string_of_expr: skiexpr -> string
