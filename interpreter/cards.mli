@@ -21,3 +21,14 @@ type skiexpr =
 
 type slot = int * skiexpr
 type default_world_type = (slot array)*(slot array)
+
+type slotallocation =
+  | SA of  (int * skiexpr)
+      
+      
+type compositexpr =
+  | CCard of cards
+  | CNum of int
+  | CLambda of (compositexpr * compositexpr)
+  | Compose of (compositexpr * slotallocation) 
+      
