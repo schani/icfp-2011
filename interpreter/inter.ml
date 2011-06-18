@@ -127,8 +127,8 @@ let rec inter context world expr =
     else
       error context "get: not slot" world)
   | Lambda(Card(Put),x) -> Card(I),world
-  | Lambda(Card(S),f) -> let f,world = inter context world f in Sf(f),world
 
+  | Lambda(Card(S),f) -> let f,world = inter context world f in Sf(f),world
   | Lambda(Sf(f),g) -> let g,world = inter context world g in Sfg(f,g),world
   | Lambda(Sfg(f,g),x) -> 
     let h,world = inter context world (Lambda(f,x)) in
