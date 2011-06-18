@@ -38,9 +38,9 @@ let _ =
       | _ -> failwith "illegal arguments"
   in
   let context = if debug then 
-{default_context with error = (debug_context_error default_context.error)} 
-    else 
-      default_context 
+    {default_context with error = (debug_context_error default_context.error)} 
+  else 
+    default_context 
   in
     match compute_runmode () with
       | RM_UNKNOWN -> failwith "dunno what to do, gimme some args"
