@@ -72,9 +72,9 @@ let std_world_printer msg =
       | MsgQuestionMove ->
 	  print_string "(1) apply card to slot, or (2) apply slot to card?\n"
       | MsgQuestionCard ->
-	  print_string "card name?"
+	  print_string "card name?\n"
       | MsgQuestionSlot ->
-	  print_string "card slot?"
+	  print_string "card slot?\n"
       | MsgMove (i, turn) ->
 	  printf "player %i %s\n" i (string_of_turn turn)
       | MsgReset i ->
