@@ -28,7 +28,7 @@ let rec run_bot context world printer turns =
     | turn :: rest -> turn, rest
     | _ -> Left (I, 0), []
   in
-    print_string (string_of_turn move);
+    print_string (msg_of_turn move);
     flush stdout;
     let count, world, _ = apply_player context world move printer
     in let move2 = (parse_input stdin printer ())
