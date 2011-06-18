@@ -35,7 +35,7 @@ extern int usleep(unsigned long usec);
 #define	PLAY_WIDTH	((SLOT_WIDTH * 16) + 1)
 #define	PLAY_HEIGHT	((SLOT_HEIGHT * 16) + 1)
 
-#define	FONT_HEIGHT	12
+#define	FONT_HEIGHT	10
 
 
 
@@ -84,6 +84,16 @@ typedef	struct _slot {
 
 slot_t	player[2][256];
 
+typedef	struct _stat {
+	int64_t total_vitality;
+	int64_t slots_alive;
+	int64_t zombies;
+}	stat_t;
+
+stat_t	player_stat[2];
+
+
+
 
 bool	is_slot_dead(slot_t *slot)
 {
@@ -109,10 +119,18 @@ bool	is_slot_index(slot_t *slot)
 	return false;
 }
 
+#define	FL_LEFT		1024
+#define	FL_RIGHT	2048
+
+#define	TI_APPLIED	16
 
 typedef	struct _card {
 	int id;
 	char *name;
+	unsigned flags;
+	vtim_t ti_applied;
+	int64_t left;
+	int64_t right;
 }	card_t;
 
 card_t	cards[] = {
@@ -142,12 +160,20 @@ char *	card_name_from_id(int id)
 	return NULL;
 }
 
-int	card_id_for_name(char *name)
+int	card_id_from_name(char *name)
 {
 	for (int i = 0; i < sizeof(cards)/sizeof(card_t); i++)
 		if (strcmp(cards[i].name, name) == 0)
 			return cards[i].id;
 	return 0;
+}
+
+card_t * card_from_name(char *name)
+{
+	for (int i = 0; i < sizeof(cards)/sizeof(card_t); i++)
+		if (strcmp(cards[i].name, name) == 0)
+			return &cards[i];
+	return NULL;
 }
 
 
@@ -159,6 +185,21 @@ void	vis_init_slots(slot_t slot[256])
 		slot[i].vitality = 10000;
 		slot[i].seq = str_copy("I");
 		slot[i].flags = 0;
+	}
+}
+
+void	vis_calc_stats(stat_t *stat, slot_t slot[256])
+{
+	stat->slots_alive = 0;
+	stat->total_vitality = 0;
+	stat->zombies = 0;
+	
+	for (int i=0; i<256; i++) {
+		if (slot[i].vitality > 0) {
+			stat->slots_alive++;
+			stat->total_vitality += slot[i].vitality;
+		} else if (slot[i].vitality < 0)
+			stat->zombies++;
 	}
 }
 
@@ -366,18 +407,18 @@ void	vis_draw_slot(SDL_Surface *dst, unsigned x, unsigned y, slot_t *slot)
 	boxRGBA(dst, xp, yp, xp + SLOT_WIDTH - 2, yp + SLOT_HEIGHT - 2,
 		r, g, b, 255);
 
-	char line[2][64] =  { "", "" };
+	char line[3][64] =  { "", "" };
 
 	if (slot->seq) {
-		sprintf(line[0], "%5.5s", slot->seq);
+		sprintf(line[0], "%7.7s", slot->seq);
 	} else {
-		sprintf(line[0], "%5ld", slot->field);
+		sprintf(line[0], "%6ld", slot->field);
 	}
 
 	sprintf(line[1], "%5ld", slot->vitality);
 
 	for (int i=0; i<2; i++)
-		vis_draw_string(dst, xp, yp + i * FONT_HEIGHT,
+		vis_draw_string(dst, xp + 2, yp + 2 + i * FONT_HEIGHT,
 			line[i], 255, 255, 255);
 }
 
@@ -390,30 +431,52 @@ void	vis_draw_slots(SDL_Surface *dst, slot_t slot[256])
 	}
 }
 
-void	vis_draw_card(SDL_Surface *dst, unsigned x, card_t card)
+void	vis_draw_card(SDL_Surface *dst, unsigned x, card_t *card)
 {
 	unsigned xp = x * SLOT_WIDTH + 1;
 	unsigned yp = 1;
 
 	unsigned r = 64;
-	unsigned g = x * 8;
-	unsigned b = 0;
+	unsigned g = 64;
+	unsigned b = 64;
+
+	if (card->flags & FL_LEFT) {
+		unsigned tv = vis_timer(&card->ti_applied);
+		
+		if (tv)
+			r = vis_mix((float)tv/TI_APPLIED, 255, r);
+		else
+			card->flags &= ~FL_LEFT;
+	}
+	if (card->flags & FL_RIGHT) {
+		unsigned tv = vis_timer(&card->ti_applied);
+		
+		if (tv)
+			g = vis_mix((float)tv/TI_APPLIED, 255, g);
+		else
+			card->flags &= ~FL_RIGHT;
+	}
+
 	boxRGBA(dst, xp, yp, xp + SLOT_WIDTH - 2, yp + CARD_HEIGHT - 2,
 		r, g, b, 255);
 
-	char line[2][64] =  { "", "" };
+	char line[3][64] =  { "", "" };
 
-	if (card.name)
-		sprintf(line[0], "%s", card.name);
+	if (card->name)
+		sprintf(line[0], "%s", card->name);
 
-	for (int i=0; i<2; i++)
-		vis_draw_string(dst, xp, yp + i * FONT_HEIGHT, line[i], 255, 255, 255);
+	sprintf(line[1], "%6ld", card->left);
+	sprintf(line[2], "%6ld", card->right);
+
+	for (int i=0; i<3; i++)
+		vis_draw_string(dst, xp + 2, yp + 2 + i * FONT_HEIGHT,
+			line[i], 255, 255, 255);
 }
 
 void	vis_draw_cards(SDL_Surface *dst)
 {
 	for (int i = 0; i < sizeof(cards)/sizeof(card_t); i++) {
-		vis_draw_card(dst, i, cards[i]);
+		vis_draw_card(dst, i, &cards[i]);
 	}
 }
 
@@ -451,6 +514,13 @@ bool	parse_player_info(char *line)
 		printf("%c: %s -> [%d]\n",
 			play_id ? 'B' : 'A',
 			card_name, slot_id);
+			
+		card_t *card = card_from_name(card_name);
+		if (card) {
+			card->flags |= FL_LEFT;
+			vis_timer_set(&card->ti_applied, TI_APPLIED);
+			card->left++;
+		}
 		return true;
 	}
 
@@ -460,6 +530,13 @@ bool	parse_player_info(char *line)
 		printf("%c: [%d] -> %s\n",
 			play_id ? 'B' : 'A',
 			slot_id, card_name);
+
+		card_t *card = card_from_name(card_name);
+		if (card) {
+			card->flags |= FL_RIGHT;
+			vis_timer_set(&card->ti_applied, TI_APPLIED);
+			card->right++;
+		}
 		return true;
 	}
 	return false;
@@ -659,7 +736,10 @@ int	main(int argc, char *argv[])
 	vis_draw_grid(play0, SLOT_WIDTH, SLOT_HEIGHT);
 	vis_draw_grid(play1, SLOT_WIDTH, SLOT_HEIGHT);
 
+	vis_calc_stats(&player_stat[0], player[0]);
 	vis_draw_slots(play0, player[0]);
+
+	vis_calc_stats(&player_stat[1], player[1]);
 	vis_draw_slots(play1, player[1]);
 
 	vis_draw_card_grid(card0, SLOT_WIDTH, CARD_HEIGHT);
@@ -673,7 +753,10 @@ int	main(int argc, char *argv[])
 	unsigned frame = 0;
 
 	while (1) {
+		vis_calc_stats(&player_stat[0], player[0]);
 		vis_draw_slots(play0, player[0]);
+
+		vis_calc_stats(&player_stat[1], player[1]);
 		vis_draw_slots(play1, player[1]);
 
 		vis_draw_cards(card0);
