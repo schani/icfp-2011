@@ -1,4 +1,5 @@
 open Cards
+open Printer
 
 exception Parse_error of string
 
@@ -33,7 +34,9 @@ let parse_slot str =
 	raise (Parse_error "exception while parsing slot")
 
 let parse_input handle () =
+  let printer = std_world_printer in
   let first_line = try
+    printer MsgQuestionMove;
     input_line handle
   with
       End_of_file -> raise End_of_file
@@ -41,15 +44,21 @@ let parse_input handle () =
     try
       match first_line with 
 	  "1" ->
+	    printer MsgQuestionCard;
 	    let card = parse_card (input_line handle)
-	    in let slot = parse_slot (input_line handle)
 	    in
-	      Left (card, slot)
+	      printer MsgQuestionSlot;
+	      let slot = parse_slot (input_line handle)
+	      in
+		Left (card, slot)
 	| "2" -> 
+	    printer MsgQuestionSlot;
 	    let slot = parse_slot (input_line handle)
-	    in let card = parse_card (input_line handle)
 	    in
-	      Right (slot, card)
+	      printer MsgQuestionCard;
+	      let card = parse_card (input_line handle)
+	      in
+		Right (slot, card)
 	| _ ->
 	    let errmsg = "expecting [12] but got " ^ first_line
 	    in
