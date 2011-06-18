@@ -3,13 +3,12 @@ open Parser
 open Printer
 open Arg
 open Cards
+open Bot
 
-let debug = true
-let debug_context_error default_context_error = 
-  fun string world -> (
-    Printf.printf "Exception: %s\n" string;
-    default_context_error string world
-  )
+type privdata = {
+  pd_turns : turn list;
+  pd_stage : int
+}
 
 let read_turns_from_file ifi printer =
   let l = ref []
@@ -23,31 +22,28 @@ let read_turns_from_file ifi printer =
     with
 	End_of_file -> List.rev !l
 
-let rec run_bot context world printer turns =
-  let move, storedturns = match turns with
-    | turn :: rest -> turn, rest
-    | _ -> Left (I, 0), []
+let move_callback context world proponent_move privdata =
+  let move, rest, stage =
+    match privdata.pd_stage with
+      | 0 (* kill enemy field 0, not yet implemented *)
+      | 1 -> (* apply commands from file *)
+	  begin
+	    match privdata.pd_turns with
+	      | turn :: [] -> turn, [], 2
+	      | turn :: rest -> turn, rest, 1
+	      | _ -> failwith "should not happen"
+	  end
+      | _ -> Left (I, 0), [], 2
   in
-    print_string (msg_of_turn move);
-    flush stdout;
-    let count, world, _ = apply_player context world move printer
-    in let move2 = (parse_input stdin printer ())
-    in
-      let count,world,_ = apply_player context world move2 printer
-      in
-	run_bot context world printer storedturns
+    move, { pd_turns = rest; pd_stage = stage }
 
 let _ =
   let ifi = open_in "/icfpnfs/SCHANI/killer-fn.cmd"
-  and printer = quiet_printer
-  and botmode = match Sys.argv with
-    | [| _; "0" |] -> 0
-    | [| _; "1" |] -> failwith "please start me with 0"
+  and skipfirst = match Sys.argv with
+    | [| _; "0" |] -> false
+    | [| _; "1" |] -> true
     | _ -> failwith "dunno what to do, gimme some args"
-  in let turns = read_turns_from_file ifi printer 
-  in let context = if debug then 
-      {default_context with error = (debug_context_error default_context.error)} 
-    else 
-      default_context 
+  in let turns = read_turns_from_file ifi quiet_printer
+  in let pd = { pd_turns = turns; pd_stage = 0 }
   in
-    run_bot context (create_default_world ()) printer turns
+    bootloop ~skipfirst move_callback pd
