@@ -4,6 +4,35 @@
 	clojure.contrib.def
 	clojure.contrib.str-utils))
 
+(if-match [[[?a ?b] & ?rest] [[1 2] 3 4]]
+	  [a b rest])
+
+(defmacro- match-lambda [expr &{:keys [lambda apply primitive]}]
+  (if-match [[[?M ?N] & ?apply-exprs] apply]
+	    (if-match [[[?x ?y] & ?lambda-exprs] lambda]
+		      (if-match [[?p & ?primitive-exprs] primitive]
+				`(let [expr# ~expr]
+				   (if (seq? expr#)
+				     (if (= (first expr#) :fn)
+				       (do
+					 (assert (= (count expr#) 3))
+					 (assert (= (count (second expr#)) 1))
+					 (let [~x (first (second expr#))
+					       ~y (nth expr# 2)]
+					   (assert (symbol? ~x))
+					   ~@lambda-exprs))
+				       (do
+					 (assert (= (count expr#) 2))
+					 (let [~M (first expr#)
+					       ~N (second expr#)]
+					   ~@apply-exprs)))
+				     (let [~p expr#]
+				       (assert (or (keyword? expr#) (symbol? expr#) (number? expr#)))
+				       ~@primitive-exprs)))
+				(throw (Exception. (str "Invalid primitive argument " primitive))))
+		      (throw (Exception. (str "Invalid lambda argument " lambda))))
+	    (throw (Exception. (str "Invalid apply argument " apply)))))
+
 (defn compile-a [x expr]
   (cond-match expr
 
@@ -16,18 +45,44 @@
 		(list :K y))))
 
 (defn compile-lambda [expr]
-  (cond-match expr
+  (match-lambda expr
+		:lambda ([x M]
+			   (compile-a x (compile-lambda M)))
+		:apply ([M N]
+			  (list (compile-lambda M) (compile-lambda N)))
+		:primitive (x
+			    x)))
 
-	      [?lambda [?x] ?M]
-	      (if (= lambda :fn)
-		(compile-a x (compile-lambda M))
-		(throw (Exception. (str "Not a valid expression: " expr))))
+(defn- bound-in? [sym expr]
+  (match-lambda expr
+		:lambda ([x M]
+			   (if (= sym x)
+			     false
+			     (bound-in? sym M)))
+		:apply ([M N]
+			  (or (bound-in? sym M)
+			      (bound-in? sym N)))
+		:primitive (x
+			    (= sym x))))
 
-	      [?M ?N]
-	      (list (compile-lambda M) (compile-lambda N))
-
-	      ?x
-	      x))
+(defn pre-optimize-lambda [expr]
+  (match-lambda expr
+		:lambda ([x M]
+			   (if (bound-in? x M)
+			     (list :fn [x] (pre-optimize-lambda M))
+			     (match-lambda M
+					   :lambda ([y N]
+						      (list :K (pre-optimize-lambda M)))
+					   :apply ([O P]
+						     (list (list :S
+								 (list :K (pre-optimize-lambda O)))
+							   (list :K (pre-optimize-lambda P))))
+					   :primitive (y
+						       expr))))
+		:apply ([M N]
+			  (list (pre-optimize-lambda M) (pre-optimize-lambda N)))
+		:primitive (x
+			    x)))
 
 (defn optimize-ski [ski]
   (if (seq? ski)
@@ -155,10 +210,3 @@
 			       (str (command-str "echo " command)
 				    "read ; read ; read\n"))
 			     commands)))))
-
-(defn make-loop [side-effect]
-  `(((:S :I) :I)
-    (:fn [f#]
-	 ((:fn [y#]
-	    (((:S :I) :I) f#))
-	  ~side-effect))))

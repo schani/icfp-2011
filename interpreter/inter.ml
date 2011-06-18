@@ -384,7 +384,6 @@ let play_game context world player0_input player0_output_callback player1_input 
       (printer (MsgTurn i);
        printer (MsgPlayer 0);
        printer (MsgWorld world);
-       printer MsgQuestionMove;
        let move = player0_input () in
        printer (MsgMove (0, move));
        let count,world,move = apply_player context world move printer in
@@ -394,7 +393,6 @@ let play_game context world player0_input player0_output_callback player1_input 
        else
 	 (printer (MsgPlayer 1);
 	  printer (MsgWorld world);
-	  printer MsgQuestionMove;
 	  let move = player1_input () in
 	  printer (MsgMove (1, move));
 	  let count,world,move = apply_player context world move printer in

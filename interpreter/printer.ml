@@ -44,16 +44,16 @@ let string_of_turn = function
 let rec string_of_expr = function
   | Card c -> string_of_card c
   | Num i -> string_of_int i
-  | Lambda (e1, e2) -> "(" ^ (string_of_expr e1) ^ (string_of_expr e2) ^ ")"
+  | Lambda (e1, e2) -> "(" ^ (string_of_expr e1) ^ ")(" ^ (string_of_expr e2) ^ ")"
   | Error -> "Error"
   | Sf e -> "S(" ^ (string_of_expr e) ^ ")"
-  | Sfg (e1, e2) -> "S(" ^ (string_of_expr e1) ^ (string_of_expr e2) ^ ")"
+  | Sfg (e1, e2) -> "S(" ^ (string_of_expr e1) ^ ")(" ^ (string_of_expr e2) ^ ")"
   | Kx e -> "K(" ^ (string_of_expr e) ^ ")"
   | AttackI e -> "attack(" ^ (string_of_expr e) ^ ")"
   | AttackIJ (e1, e2) ->
-      "attack(" ^ (string_of_expr e1) ^ (string_of_expr e2) ^ ")"
+      "attack(" ^ (string_of_expr e1) ^ ")(" ^ (string_of_expr e2) ^ ")"
   | HelpI e -> "help(" ^ (string_of_expr e) ^ ")"
-  | HelpIJ (e1, e2) -> "help(" ^ (string_of_expr e1) ^ (string_of_expr e2) ^ ")"
+  | HelpIJ (e1, e2) -> "help(" ^ (string_of_expr e1) ^ ")(" ^ (string_of_expr e2) ^ ")"
   | ZombieI e -> "zombie(" ^ (string_of_expr e) ^ ")"
 
 let print_slot i = function

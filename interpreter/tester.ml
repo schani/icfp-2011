@@ -36,29 +36,30 @@ let _ =
       | [|_; "alt"|] -> RM_ALT
       | [|_; "match"; p1; p2|] -> RM_MATCH (p1, p2)
       | _ -> failwith "illegal arguments"
+  and printer = std_world_printer
   in
   let context = if debug then 
-{default_context with error = (debug_context_error default_context.error)} 
-    else 
-      default_context 
+    {default_context with error = (debug_context_error default_context.error)} 
+  else 
+    default_context 
   in
     match compute_runmode () with
       | RM_UNKNOWN -> failwith "dunno what to do, gimme some args"
       | RM_ONLY -> 
 	  play_game context (create_default_world ())
-	    (parse_input stdin) (output_callback None)
+	    (parse_input stdin printer) (output_callback None)
 	    (fun () -> Left(I,0)) (output_callback None)
-	    std_world_printer 0
+	    printer 0
       | RM_ALT ->
 	  play_game context (create_default_world ())
-	    (parse_input stdin) (output_callback None)
-	    (parse_input stdin) (output_callback None)
-	    std_world_printer 0
+	    (parse_input stdin printer) (output_callback None)
+	    (parse_input stdin printer) (output_callback None)
+	    printer 0
       | RM_MATCH (p1, p2) ->
 	  let p1_in_channel, p1_out_channel = Unix.open_process (p1 ^ " 0")
 	  and p2_in_channel, p2_out_channel = Unix.open_process (p2 ^ " 1")
 	  in
 	    play_game context (create_default_world ())
-	      (parse_input p1_in_channel) (output_callback (Some p1_out_channel))
-	      (parse_input p2_in_channel) (output_callback (Some p2_out_channel))
+	      (parse_input p1_in_channel printer) (output_callback (Some p1_out_channel))
+	      (parse_input p2_in_channel printer) (output_callback (Some p2_out_channel))
 	      std_world_printer 1
