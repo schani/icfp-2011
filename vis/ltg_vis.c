@@ -138,6 +138,7 @@ typedef	struct _stat {
 	int64_t total_vitality;
 	int64_t slots_alive;
 	int64_t zombies;
+	int64_t exceptions;
 }	stat_t;
 
 stat_t	player_stat[2];
@@ -199,6 +200,7 @@ card_t	cards[] = {
 	{ .id = -13, .name = "copy" },
 	{ .id = -14, .name = "revive" },
 	{ .id = -15, .name = "zombie" },
+	{ .id = -16, .name = "XXX" },
 	{ .id = 0 }};
 
 
@@ -499,6 +501,16 @@ void	vis_draw_slot(SDL_Surface *dst, unsigned x, unsigned y, slot_t *slot)
 		else
 			slot->flags &= ~FL_HEALED;
 	}
+	if (slot->flags & FL_RESET) {
+		unsigned tv = vis_timer(&slot->vtim.ti_reset);
+		
+		if (tv) {
+			r = vis_mix((float)tv/TI_RESET, 255, r);
+			g = vis_mix((float)tv/TI_RESET, 255, g);
+			b = vis_mix((float)tv/TI_RESET, 255, b);
+		} else
+			slot->flags &= ~FL_RESET;
+	}
 
 	boxRGBA(dst, xp, yp, xp + SLOT_WIDTH - 2, yp + SLOT_HEIGHT - 2,
 		r, g, b, 255);
@@ -600,8 +612,9 @@ void	vis_draw_stats(SDL_Surface *dst, stat_t *stat)
 
 	sprintf(line[0], "vitavg: %ld", stat->total_vitality / 256);
 	sprintf(line[1], "zombies: %ld", stat->zombies);
+	sprintf(line[2], "xcept: %ld", stat->exceptions);
 
-	for (int i=0; i<2; i++)
+	for (int i=0; i<3; i++)
 		vis_draw_string_shaded(dst, 4, 4 + i * 14,
 			stats_fnt, line[i], 255, 255, 255, 32, 32, 32);
 }
@@ -722,7 +735,20 @@ bool	parse_slot(char *line)
 			vis_timer_set(&slot->vtim.ti_changed, TI_CHANGED);
 		}
 	}
-	return false;
+	return true;
+}
+
+bool	parse_slot_reset(char *line)
+{
+	int n = sscanf(line, "slot %d reset to I", &slot_id);
+	if (n == 1) {
+		slot_t *slot =  &player[play_id][slot_id];
+
+		printf("slot %d reset\n", slot_id);
+		slot->flags |= FL_RESET;
+		vis_timer_set(&slot->vtim.ti_reset, TI_RESET);
+	}
+	return true;
 }
 
 bool	parse_expr(char *line)
@@ -734,7 +760,10 @@ bool	parse_expr(char *line)
 bool	parse_exception(char *line)
 {
 	printf("%s\n", line);
-	return false;
+	player_stat[play_id].exceptions++;
+	cards[15].flags |= FL_LEFT;
+	cards[15].ti_applied = TI_APPLIED;
+	return true;
 }
 
 enum	_state {
@@ -776,6 +805,10 @@ bool	parse_input(char *line)
 		ret = parse_exception(line);
 		break;
 
+	case 's':	/* slot reset */
+		ret = parse_slot_reset(line);
+		break;
+
 	case '0':
 	case '1':
 	case '2':
@@ -789,7 +822,6 @@ bool	parse_input(char *line)
 		ret = parse_slot(line);
 		break;
 
-	case 's':	/* slot ignored */
 	case 'c':	/* card ignored */
 	default:	/* ignored */
 		break;
