@@ -1,0 +1,24 @@
+Submission Information
+
+=== TEAM-NAME ==========================================
+Funktion im Kopf der Mensch
+
+=== PASSWORD ===========================================
+DerProphet
+
+=== CONTACT-EMAIL ======================================
+fikdm11@tilab.tuwien.ac.at
+
+=== SUBMISSION-URL =====================================
+http://www.tilab.tuwien.ac.at/~heinz/fikdm11/xxx.tar.gz
+
+=== TEAM-MEMBER ========================================
+Mark Probst, LINBIT, Austria
+Herbert Poetzl, Linux-VServer, Austria
+Heinz Deinhart, TU Wien, Austria
+Alexander Koessler, TU Wien, Austria
+Josef Widder, Texas A&M University, Austria
+Martin Biely, EPFL, Austria
+Matthias Fuegger, TU Wien, Austria
+Dieter Etz, Riedel Communications, Austria
+
