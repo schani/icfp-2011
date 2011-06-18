@@ -46,12 +46,12 @@ let rec string_of_expr = function
   | Sf e -> "S(" ^ (string_of_expr e) ^ ")"
   | Sfg (e1, e2) -> "S(" ^ (string_of_expr e1) ^ (string_of_expr e2) ^ ")"
   | Kx e -> "K(" ^ (string_of_expr e) ^ ")"
-  | AttackI e -> "Attack(" ^ (string_of_expr e) ^ ")"
+  | AttackI e -> "attack(" ^ (string_of_expr e) ^ ")"
   | AttackIJ (e1, e2) ->
-      "Attack(" ^ (string_of_expr e1) ^ (string_of_expr e2) ^ ")"
-  | HelpI e -> "HelpI(" ^ (string_of_expr e) ^ ")"
-  | HelpIJ (e1, e2) -> "Help(" ^ (string_of_expr e1) ^ (string_of_expr e2) ^ ")"
-  | ZombieI e -> "Zombie(" ^ (string_of_expr e) ^ ")"
+      "attack(" ^ (string_of_expr e1) ^ (string_of_expr e2) ^ ")"
+  | HelpI e -> "help(" ^ (string_of_expr e) ^ ")"
+  | HelpIJ (e1, e2) -> "help(" ^ (string_of_expr e1) ^ (string_of_expr e2) ^ ")"
+  | ZombieI e -> "zombie(" ^ (string_of_expr e) ^ ")"
 
 let print_slot i = function
   | 10000, Card I -> ()
