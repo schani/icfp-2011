@@ -37,6 +37,13 @@ extern int usleep(unsigned long usec);
 #define	PLAY_WIDTH	((SLOT_WIDTH * 16) + 1)
 #define	PLAY_HEIGHT	((SLOT_HEIGHT * 16) + 1)
 
+
+#define	STAT_WIDTH	80
+#define	STAT_HEIGHT	48
+
+#define	SCORE_WIDTH	128
+#define	SCORE_HEIGHT	40
+
 #define	FONT_HEIGHT	10
 
 
@@ -346,7 +353,17 @@ out_err:
 
 
 
-TTF_Font *fnt = NULL;
+TTF_Font *small_fnt = NULL;
+TTF_Font *stats_fnt = NULL;
+
+
+
+
+uint64_t turn = 0;
+int play_id = 0;
+int card_id = 0;
+int slot_id = 0;
+int vitality = 0;
 
 
 
@@ -367,7 +384,8 @@ void	vis_draw_card_grid(SDL_Surface *dst, unsigned slotw, unsigned sloth)
 }
 
 
-void	vis_draw_string(SDL_Surface *dst, unsigned xp, unsigned yp, char *str, Uint8 r, Uint8 g, Uint8 b)
+void	vis_draw_string(SDL_Surface *dst, unsigned xp, unsigned yp,
+		TTF_Font *fnt, char *str, Uint8 r, Uint8 g, Uint8 b)
 {
 	SDL_Rect dstRect = {xp, yp, 0, 0};
 	SDL_Color fg = { .r = r, .g = g, .b = b };
@@ -380,6 +398,16 @@ void	vis_draw_string(SDL_Surface *dst, unsigned xp, unsigned yp, char *str, Uint
 #endif
 	SDL_BlitSurface(sText, NULL, dst, &dstRect);
 	SDL_FreeSurface(sText);
+}
+
+void	vis_draw_string_centered(SDL_Surface *dst, unsigned xp, unsigned yp,
+		TTF_Font *fnt, char *str, Uint8 r, Uint8 g, Uint8 b)
+{
+	int w, h;
+	
+	TTF_SizeText(fnt, str, &w, &h);
+	
+	vis_draw_string(dst, xp - w / 2, yp, fnt, str, r, g, b);
 }
 
 void	vis_slot_background(slot_t *slot,
@@ -462,7 +490,7 @@ void	vis_draw_slot(SDL_Surface *dst, unsigned x, unsigned y, slot_t *slot)
 
 	for (int i=0; i<2; i++)
 		vis_draw_string(dst, xp + 2, yp + 2 + i * FONT_HEIGHT,
-			line[i], 255, 255, 255);
+			small_fnt, line[i], 255, 255, 255);
 }
 
 void	vis_draw_slots(SDL_Surface *dst, slot_t slot[256])
@@ -513,7 +541,7 @@ void	vis_draw_card(SDL_Surface *dst, unsigned x, card_t *card)
 
 	for (int i=0; i<3; i++)
 		vis_draw_string(dst, xp + 2, yp + 2 + i * FONT_HEIGHT,
-			line[i], 255, 255, 255);
+			small_fnt, line[i], 255, 255, 255);
 }
 
 void	vis_draw_cards(SDL_Surface *dst)
@@ -539,18 +567,29 @@ void	vis_draw_vitality(SDL_Surface *dst, uint64_t vitality)
 	boxRGBA(dst, 0, hinv, VITA_WIDTH, hinv + height, r, g, b, 255);
 }
 
+void	vis_draw_stats(SDL_Surface *dst, stat_t *stat)
+{
+	boxRGBA(dst, 0, 0, STAT_WIDTH, STAT_HEIGHT, 64, 64, 64, 255);
+}
+
+void	vis_draw_score(SDL_Surface *dst)
+{
+	boxRGBA(dst, 0, 0, SCORE_WIDTH, SCORE_HEIGHT, 64, 64, 64, 255);
+	
+	char line[2][64] =  { "", "" };
+
+	sprintf(line[0], "%ld", turn);
+	sprintf(line[1], "%ld : %ld",
+		player_stat[0].slots_alive, player_stat[1].slots_alive);
+
+	for (int i=0; i<2; i++)
+		vis_draw_string_centered(dst, SCORE_WIDTH / 2, 2 + i * 16,
+			stats_fnt, line[i], 255, 255, 255);
+}
 
 
 
 
-
-
-
-uint64_t turn = 0;
-int play_id = 0;
-int card_id = 0;
-int slot_id = 0;
-int vitality = 0;
 
 
 bool	parse_turn_info(char *line)
@@ -775,6 +814,13 @@ int	main(int argc, char *argv[])
 	vita1 = SDL_CreateRGBSurface(SDL_SWSURFACE,
 		VITA_WIDTH, PLAY_HEIGHT, 32, 0, 0, 0, 0);
 
+	SDL_Surface *stat0, *stat1, *score;
+	stat0 = SDL_CreateRGBSurface(SDL_SWSURFACE,
+		STAT_WIDTH, STAT_HEIGHT, 32, 0, 0, 0, 0);
+	stat1 = SDL_CreateRGBSurface(SDL_SWSURFACE,
+		STAT_WIDTH, STAT_HEIGHT, 32, 0, 0, 0, 0);
+	score = SDL_CreateRGBSurface(SDL_SWSURFACE,
+		SCORE_WIDTH, SCORE_HEIGHT, 32, 0, 0, 0, 0);
 
 
 	SDL_WM_SetCaption("LTG Sim", "LTG Sim");
@@ -786,12 +832,20 @@ int	main(int argc, char *argv[])
 		exit(2);
 	}
 
-	fnt = TTF_OpenFont("/icfpnfs/BERTL/vis.ttf", 8);
-	if (!fnt) {
+	small_fnt = TTF_OpenFont("/icfpnfs/BERTL/vis_small.ttf", 8);
+	if (!small_fnt) {
 		fprintf(stderr,
 			"Unable to open font: %s\n",
 			SDL_GetError());
 		exit(3);
+	}
+
+	stats_fnt = TTF_OpenFont("/icfpnfs/BERTL/vis_stats.ttf", 14);
+	if (!stats_fnt) {
+		fprintf(stderr,
+			"Unable to open font: %s\n",
+			SDL_GetError());
+		exit(4);
 	}
 
 	vis_init_slots(player[0]);
@@ -815,6 +869,10 @@ int	main(int argc, char *argv[])
 	vis_draw_vitality(vita0, player_stat[0].total_vitality);
 	vis_draw_vitality(vita1, player_stat[1].total_vitality);
 
+	vis_draw_score(score);
+	vis_draw_stats(stat0, &player_stat[0]);
+	vis_draw_stats(stat1, &player_stat[1]);
+
 	SDL_Thread *parse_thread = SDL_CreateThread(do_parse, NULL);
 
 	unsigned frame = 0;
@@ -826,9 +884,9 @@ int	main(int argc, char *argv[])
 		vis_calc_stats(&player_stat[1], player[1]);
 		vis_draw_slots(play1, player[1]);
 
-		SDL_Rect psrcRect = {0, 0, PLAY_WIDTH, PLAY_HEIGHT };
-		SDL_Rect play0Rect = {10, 10, PLAY_WIDTH, PLAY_HEIGHT };
-		SDL_Rect play1Rect = {VID_WIDTH - 10 - PLAY_WIDTH, 10, PLAY_WIDTH, PLAY_HEIGHT };
+		SDL_Rect psrcRect = { 0, 0, PLAY_WIDTH, PLAY_HEIGHT };
+		SDL_Rect play0Rect = { 10, 10, PLAY_WIDTH, PLAY_HEIGHT };
+		SDL_Rect play1Rect = { VID_WIDTH - 10 - PLAY_WIDTH, 10, PLAY_WIDTH, PLAY_HEIGHT };
 
 		SDL_BlitSurface(play0, &psrcRect, screen, &play0Rect);
 		SDL_BlitSurface(play1, &psrcRect, screen, &play1Rect);
@@ -836,9 +894,9 @@ int	main(int argc, char *argv[])
 		vis_draw_cards(card0);
 		vis_draw_cards(card1);
 
-		SDL_Rect csrcRect = {0, 0, PLAY_WIDTH, CARD_HEIGHT + 1 };
-		SDL_Rect card0Rect = {10, 20 + PLAY_HEIGHT, PLAY_WIDTH, CARD_HEIGHT + 1 };
-		SDL_Rect card1Rect = {VID_WIDTH - 10 - PLAY_WIDTH, 20 + PLAY_HEIGHT, PLAY_WIDTH, CARD_HEIGHT + 1 };
+		SDL_Rect csrcRect = { 0, 0, PLAY_WIDTH, CARD_HEIGHT + 1 };
+		SDL_Rect card0Rect = { 10, 20 + PLAY_HEIGHT, PLAY_WIDTH, CARD_HEIGHT + 1 };
+		SDL_Rect card1Rect = { VID_WIDTH - 10 - PLAY_WIDTH, 20 + PLAY_HEIGHT, PLAY_WIDTH, CARD_HEIGHT + 1 };
 
 		SDL_BlitSurface(card0, &csrcRect, screen, &card0Rect);
 		SDL_BlitSurface(card1, &csrcRect, screen, &card1Rect);
@@ -846,12 +904,30 @@ int	main(int argc, char *argv[])
 		vis_draw_vitality(vita0, player_stat[0].total_vitality);
 		vis_draw_vitality(vita1, player_stat[1].total_vitality);
 
-		SDL_Rect vsrcRect = {0, 0, VITA_WIDTH, PLAY_HEIGHT };
-		SDL_Rect vita0Rect = {20 + PLAY_WIDTH, 10, VITA_WIDTH, PLAY_HEIGHT };
-		SDL_Rect vita1Rect = {VID_WIDTH - 20 - PLAY_WIDTH - VITA_WIDTH, 10, VITA_WIDTH, PLAY_HEIGHT };
+		SDL_Rect vsrcRect = { 0, 0, VITA_WIDTH, PLAY_HEIGHT };
+		SDL_Rect vita0Rect = { 20 + PLAY_WIDTH, 10, VITA_WIDTH, PLAY_HEIGHT };
+		SDL_Rect vita1Rect = { VID_WIDTH - 20 - PLAY_WIDTH - VITA_WIDTH, 10, VITA_WIDTH, PLAY_HEIGHT };
 
 		SDL_BlitSurface(vita0, &vsrcRect, screen, &vita0Rect);
 		SDL_BlitSurface(vita1, &vsrcRect, screen, &vita1Rect);
+
+		vis_draw_score(score);
+		vis_draw_stats(stat0, &player_stat[0]);
+		vis_draw_stats(stat1, &player_stat[1]);
+
+		SDL_Rect ssrcRect = { 0, 0, STAT_WIDTH, STAT_HEIGHT };
+		SDL_Rect stat0Rect = { 30 + PLAY_WIDTH + VITA_WIDTH, 10, STAT_WIDTH, STAT_HEIGHT };
+		SDL_Rect stat1Rect = { VID_WIDTH - 30 - PLAY_WIDTH - VITA_WIDTH - STAT_WIDTH,
+			10 + PLAY_HEIGHT - STAT_HEIGHT, STAT_WIDTH, STAT_HEIGHT };
+
+		SDL_BlitSurface(stat0, &ssrcRect, screen, &stat0Rect);
+		SDL_BlitSurface(stat1, &ssrcRect, screen, &stat1Rect);
+
+		SDL_Rect xsrcRect = { 0, 0, SCORE_WIDTH, SCORE_HEIGHT };
+		SDL_Rect scoreRect = { ( VID_WIDTH - SCORE_WIDTH ) / 2, 
+			20 + PLAY_HEIGHT + CARD_HEIGHT - SCORE_HEIGHT, SCORE_WIDTH, SCORE_HEIGHT };
+
+		SDL_BlitSurface(score, &xsrcRect, screen, &scoreRect);
 
 		SDL_Flip(screen); //Refresh the screen
 
