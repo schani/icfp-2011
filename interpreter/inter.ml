@@ -159,7 +159,7 @@ let rec inter context world expr =
       let vit,world = context.read_other_vit (255 - s) world in
       if isalive vit then
 	let vit = decr context.life vit in
-	Card(I),context.write_own_vit s vit world
+	Card(I),context.write_other_vit (255 - s) vit world
       else
 	Card(I),world
     else
