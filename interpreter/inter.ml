@@ -100,13 +100,14 @@ let incrdepth c =
   c,(d >= 1000)
 
 let rec inter context world expr = 
+  (* Printf.printf "INTER: %s\n" (string_of_expr expr); *)
   let context,stop = incrdepth context in
   if stop then
     error context "max depth exceeded" world
   else match expr with
   | Num _ as x -> x,world
   | Card(Zero) -> Num 0,world
-  | Card(_) -> error context "only zero can be played as a value" world
+  | Card(_) as c -> c,world (* error context "only zero can be played as a value" world *)
 
   | Lambda(Card(I),x) -> x,world
   | Lambda(Card(Zero),_) -> error context "zero is not a function" world
