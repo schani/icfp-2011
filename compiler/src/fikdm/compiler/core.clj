@@ -53,6 +53,37 @@
 		:primitive (x
 			    x)))
 
+(defn- bound-in? [sym expr]
+  (match-lambda expr
+		:lambda ([x M]
+			   (if (= sym x)
+			     false
+			     (bound-in? sym M)))
+		:apply ([M N]
+			  (or (bound-in? sym M)
+			      (bound-in? sym N)))
+		:primitive (x
+			    (= sym x))))
+
+(defn pre-optimize-lambda [expr]
+  (match-lambda expr
+		:lambda ([x M]
+			   (if (bound-in? x M)
+			     (list :fn [x] (pre-optimize-lambda M))
+			     (match-lambda M
+					   :lambda ([y N]
+						      (list :K (pre-optimize-lambda M)))
+					   :apply ([O P]
+						     (list (list :S
+								 (list :K (pre-optimize-lambda O)))
+							   (list :K (pre-optimize-lambda P))))
+					   :primitive (y
+						       expr))))
+		:apply ([M N]
+			  (list (pre-optimize-lambda M) (pre-optimize-lambda N)))
+		:primitive (x
+			    x)))
+
 (defn optimize-ski [ski]
   (if (seq? ski)
     (let [ski (map optimize-ski ski)]
