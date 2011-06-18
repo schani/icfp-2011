@@ -316,7 +316,7 @@ let movegetslot = function
   | Left(_,slot) -> slot 
   | Right(slot,_) -> slot 
     
-let apply_move move world context = 
+let apply_move move world context debug = 
   let slot = movegetslot move in 
   let vit,world = context.read_own_vit slot world in
   try 
@@ -331,6 +331,7 @@ let apply_move move world context =
     else
       (context.error "apply: not alive" world; (* assert false; *) world)
   with InterError(msg,w) -> 
+    debug (MsgReset slot);
     context.write_own_field slot (Card I) world
 
 let apply_zombies world context = 
@@ -353,9 +354,9 @@ let apply_zombies world context =
       loop (i+1) world
   in loop 0 world
       
-let apply_player context world move = 
+let apply_player context world move debug = 
   let world = apply_zombies world context in
-  let world = apply_move move world context in 
+  let world = apply_move move world context debug in 
   let count,world = context.count_alive_own world in
   let world = context.end_move world in
   count,world,move
@@ -384,7 +385,7 @@ let play_game context world player0_input player0_output_callback player1_input 
        printer MsgQuestionMove;
        let move = player0_input () in
        printer (MsgMove (0, move));
-       let count,world,move = apply_player context world move in
+       let count,world,move = apply_player context world move printer in
        player1_output_callback move;
        if count = 0 then
 	 1,world
@@ -394,7 +395,7 @@ let play_game context world player0_input player0_output_callback player1_input 
 	  printer MsgQuestionMove;
 	  let move = player1_input () in
 	  printer (MsgMove (1, move));
-	  let count,world,move = apply_player context world move in
+	  let count,world,move = apply_player context world move printer in
 	  player0_output_callback move;
 	  if count = 0 then 
 	    0,world
