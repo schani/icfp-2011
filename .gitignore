@@ -8,3 +8,6 @@
 *.ideps
 vis/ltg_clean
 vis/ltg_vis
+tools/rh/rh
+tools/rh/rh0
+tools/mh/mh
