@@ -33,8 +33,7 @@ let parse_slot str =
       _ ->
 	raise (Parse_error "exception while parsing slot")
 
-let parse_input handle () =
-  let printer = std_world_printer in
+let parse_input handle printer () =
   let first_line = try
     printer MsgQuestionMove;
     input_line handle
