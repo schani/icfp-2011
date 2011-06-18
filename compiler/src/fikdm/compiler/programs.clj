@@ -69,17 +69,6 @@
 		       (make-se-combine-fn se-fn acc)))))
       ~side-effect-fn)))
 
-(defn make-help-attack-loop [help-field help-strength attack-field attack-strength]
-  (make-loop (make-help-attack help-field help-strength attack-field attack-strength)))
-
-(defn make-dec-loop [slot]
-  (make-loop
-   `((:dec ~slot) ((:dec ~slot) ((:dec ~slot) ((:dec ~slot) (:dec ~slot)))))))
-
-(defn make-help-attack-self-return [n help-field help-strength attack-field attack-strength]
-  (let [help-attack (make-help-attack 0 8192 0 768)]
-    (make-apply-self-return (make-repeat-effect n help-attack))))
-
 (defn lambda->ski [program]
   (optimize-ski (compile-lambda (pre-optimize-lambda program))))
 
