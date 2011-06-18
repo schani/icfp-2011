@@ -94,15 +94,15 @@
 (shell-script "/tmp/beidler.sh"
 	      (concat
 	       (generate 0 64 nil)
-	       (generate (lambda->ski (list (make-help-get-attack-fn 0 8192 64 768) :I)) 65 *regs*)))
-
-(spit-echoer "/tmp/beidler.sh"
-	     (make-apply-self-return
-	      (make-se-combine-fn
-	      (let [slot (gensym 'slot)]
-		`((:fn [~slot]
-		       ~(make-repeat-effect-fn 15 (make-help-attack-fn 0 8192 slot 768)))
-		  ~(make-se-fn '(:get 64)))))))
+	       (generate (lambda->ski
+			  (make-apply-self-return
+			   (make-repeat-effect-fn 8
+						  (make-help-get-attack-fn 0 8192 64 768)))) 65 *regs*)
+	       (apply concat (repeat 256
+				     [[:right 65 :I]
+				      [:right 65 :I]
+				      [:left 64 :succ]]))
+	       ))
 
 ;;(spit-echoer "/tmp/beidler.sh" (make-help-attack-loop 0 8192 0 768))
 ;;(spit-echoer "/tmp/beidler.sh" (make-dec-loop 0))
