@@ -22,6 +22,13 @@ type skiexpr =
 type slot = int * skiexpr
 type default_world_type = (slot array)*(slot array)
 
+type move_stats = {
+  suppress_warning: bool;
+  reset_slots: int list
+}
+
+type turn_stats = move_stats * move_stats
+
 type slotallocation =
   | SA of (int * skiexpr)
       
@@ -31,3 +38,10 @@ type compositexpr =
   | CLambda of (compositexpr * compositexpr)
   | Compose of (compositexpr * slotallocation) 
       
+let empty_move_stats () =
+   {
+     suppress_warning = true;
+     reset_slots = [];
+   }
+
+let empty_turn_stats () = (empty_move_stats ()), (empty_move_stats ())

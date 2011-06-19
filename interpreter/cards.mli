@@ -22,6 +22,15 @@ type skiexpr =
 type slot = int * skiexpr
 type default_world_type = (slot array)*(slot array)
 
+type move_stats = {
+  suppress_warning: bool;
+  reset_slots: int list
+}
+
+type turn_stats = move_stats * move_stats
+
+val empty_turn_stats: unit -> turn_stats
+
 type slotallocation =
   | SA of  (int * skiexpr)
       
