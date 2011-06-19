@@ -4,6 +4,19 @@ open Printer
 open Arg
 open Cards
 
+let read_turns_from_file filename =
+  let ifi = open_in filename
+  in let l = ref []
+  in
+    try
+      while true
+      do
+	l := (parse_input ifi  quiet_printer ()) :: !l
+      done;
+      []
+    with
+	End_of_file -> List.rev !l
+
 let bootloop move_callback priv_data =
   let debug = true
   in let debug_context_error default_context_error = 

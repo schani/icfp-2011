@@ -10,18 +10,6 @@ type privdata = {
   pd_stage : int
 }
 
-let read_turns_from_file ifi printer =
-  let l = ref []
-  in
-    try
-      while true
-      do
-	l := (parse_input ifi printer ()) :: !l
-      done;
-      !l
-    with
-	End_of_file -> List.rev !l
-
 let move_callback context world proponent_move privdata =
   let move, rest, stage =
     match privdata.pd_stage with
@@ -38,8 +26,7 @@ let move_callback context world proponent_move privdata =
     move, { pd_turns = rest; pd_stage = stage }
 
 let _ =
-  let ifi = open_in "/icfpnfs/SCHANI/killer-fn.cmd"
-  in let turns = read_turns_from_file ifi quiet_printer
+  let turns = read_turns_from_file "/icfpnfs/SCHANI/killer-fn.cmd"
   in let pd = { pd_turns = turns; pd_stage = 0 }
   in
     bootloop move_callback pd
