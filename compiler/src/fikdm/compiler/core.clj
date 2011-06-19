@@ -34,26 +34,6 @@
 		      (throw (Exception. (str "Invalid lambda argument " lambda))))
 	    (throw (Exception. (str "Invalid apply argument " apply)))))
 
-(defn compile-a [x expr]
-  (cond-match expr
-
-	      [?M ?N]
-	      (list (list :S (compile-a x M)) (compile-a x N))
-
-	      ?y
-	      (if (= x y)
-		:I
-		(list :K y))))
-
-(defn compile-lambda [expr]
-  (match-lambda expr
-		:lambda ([x M]
-			   (compile-a x (compile-lambda M)))
-		:apply ([M N]
-			  (list (compile-lambda M) (compile-lambda N)))
-		:primitive (x
-			    x)))
-
 (defn- bound-in? [sym expr]
   (match-lambda expr
 		:lambda ([x M]
@@ -66,22 +46,25 @@
 		:primitive (x
 			    (= sym x))))
 
-(defn pre-optimize-lambda [expr]
+(defn compile-a [x expr]
+  (if (bound-in? x expr)
+    (cond-match expr
+
+		[?M ?N]
+		(list (list :S (compile-a x M)) (compile-a x N))
+
+		?y
+		(do
+		  (assert (= x y))
+		  :I))
+    (list :K expr)))
+
+(defn compile-lambda [expr]
   (match-lambda expr
 		:lambda ([x M]
-			   (if (bound-in? x M)
-			     (list :fn [x] (pre-optimize-lambda M))
-			     (match-lambda M
-					   :lambda ([y N]
-						      (list :K (pre-optimize-lambda M)))
-					   :apply ([O P]
-						     (list (list :S
-								 (list :K (pre-optimize-lambda O)))
-							   (list :K (pre-optimize-lambda P))))
-					   :primitive (y
-						       expr))))
+			   (compile-a x (compile-lambda M)))
 		:apply ([M N]
-			  (list (pre-optimize-lambda M) (pre-optimize-lambda N)))
+			  (list (compile-lambda M) (compile-lambda N)))
 		:primitive (x
 			    x)))
 
