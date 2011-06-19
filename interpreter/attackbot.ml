@@ -6,69 +6,56 @@ open Cards
 open Bot
 open Cofu
 
+type state =
+  | S_FIND_VICTIM of int
+  | S_APPLY_TURNS of (turn list * state)
+  | S_MASR_LAUNCH_ATTACK of int
+  | S_MASR_FIND_NEXT_VICTIM of int
+
 type privdata = {
-  pd_turns: turn list;
-  pd_stage: int;
-  pd_victim: int;
+  pd_state: state
 }
+
 
 let calculate_64_er_slot_value slot_to_attack =
   255 - slot_to_attack
 
 let move_callback context world proponent_move turn_stats privdata =
   try
-    let move, rest, victim, stage =
-      match privdata.pd_stage with
-	| 0 (* kill enemy field 255, not yet implemented *)
-	| 1 -> begin (* apply commands from file *)
-	    match privdata.pd_turns with
-	      | turn :: [] -> turn, [], 255, 2
-	      | turn :: rest -> turn, rest, 255, 1
-	      | _ -> failwith "should not happen"
-	  end
-	| 2 -> begin (* search for cool *)
-	    let victim = (last_alive_other_slot world)
+    let rec state_machine state =
+      match privdata.pd_state with
+	| S_FIND_VICTIM limit ->
+	    let victim = (last_alive_other_slot_custom world limit)
 	    in let job = write_number_to_slot (calculate_64_er_slot_value victim) 64
 	    in
-	      match job with
-		| jobfirst :: jobrest ->
-		    jobfirst, jobrest, victim, 3
-		| [] -> raise (Bot_error
-				 "move_callback: write_number_to_slot failed")
-	  end
-	| 3 -> begin (* apply commands from file *)
-	    match privdata.pd_turns with
-	      | turn :: [] -> turn, [], privdata.pd_victim, 4
-	      | turn :: rest -> turn, rest, privdata.pd_victim, 3
+	      state_machine (S_APPLY_TURNS (job, S_MASR_LAUNCH_ATTACK victim))
+	| S_APPLY_TURNS (turns, new_state) -> begin
+	    match turns with
+	      | turn :: [] -> turn, new_state
+	      | turn :: rest -> turn, S_APPLY_TURNS (rest, new_state)
 	      | _ -> failwith "should not happen"
 	  end
-	| 4 -> begin (* start the action *)
-	    Right (65, I), [], privdata.pd_victim, 5
-	  end
-	| 5 -> (* search for new victim if already killed *)
-	    let victim =  privdata.pd_victim
-	    in let vicvit, _ = context.read_other_vit victim world
+	| S_MASR_LAUNCH_ATTACK victim ->
+	    let vicvit, _ = context.read_other_vit victim world
 	    in
-	      if vicvit > 0 then (* victim still alive *)
-		Right (65, I), [], victim, 5
-	      else (* victim killed, we need new target *)
-		  let next_victim = last_alive_other_slot world
-		  in let possible_job = write_number_to_slot (calculate_64_er_slot_value next_victim) 64
-		  in
-		    if (List.length possible_job) < (victim - next_victim) then (* new number *)
-		      match possible_job with
-			| jobfirst :: jobrest ->
-			    jobfirst, jobrest, next_victim, 3
-			| [] -> raise (Bot_error
-					 "move_callback: write_number_to_slot failed")
-		    else (* reachable by suckas *)
-		      let sucka = Left (Succ, 64)
-		      in let suckas = (Array.to_list (Array.make (victim - next_victim - 1) sucka))
-		      in
-			sucka, suckas, next_victim, 3
-	| _ -> raise (Bot_error "move_callback got illegal state")
+	      if vicvit > 0 then
+		Right (victim, I), S_MASR_LAUNCH_ATTACK victim
+	      else
+		state_machine (S_MASR_FIND_NEXT_VICTIM victim)
+	| S_MASR_FIND_NEXT_VICTIM old_victim ->
+	    let next_victim = last_alive_other_slot world
+	    in let possible_job = write_number_to_slot (calculate_64_er_slot_value next_victim) 64
+	    in
+	      if (List.length possible_job) < (old_victim - next_victim) then (* create new number *)
+		state_machine (S_FIND_VICTIM next_victim)
+	      else
+		let new_vic_fun = Left (Succ, 64)
+		in let new_vic_funs = (Array.to_list (Array.make (old_victim - next_victim) new_vic_fun))
+		in
+		  state_machine (S_APPLY_TURNS (new_vic_funs, S_MASR_LAUNCH_ATTACK next_victim))
+    in let move, next_state = state_machine privdata.pd_state
     in
-      move, { pd_turns = rest; pd_stage = stage; pd_victim = victim }
+	move, { pd_state = next_state }
   with
       Bot_error str ->
 	Printf.fprintf stderr "move_callback: Bot_error: %s\n" str;
@@ -76,6 +63,6 @@ let move_callback context world proponent_move turn_stats privdata =
 
 let _ =
   let turns = read_turns_from_file "functions/masr.cmd"
-  in let pd = { pd_turns = turns; pd_stage = 0; pd_victim = 0}
+  in let pd = { pd_state = S_APPLY_TURNS (turns, S_FIND_VICTIM 255) }
   in
     bootloop move_callback pd

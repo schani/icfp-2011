@@ -36,8 +36,8 @@ let rec last_alive_slotnr slots = function
 let last_alive_own_slot world = last_alive_slotnr (fst world) 255
 let last_alive_other_slot world = last_alive_slotnr (snd world) 255
 
-let last_alive_own_slot world = last_alive_slotnr (fst world) 255
-let last_alive_other_slot world = last_alive_slotnr (snd world) 255
+let last_alive_own_slot_custom world = last_alive_slotnr (fst world)
+let last_alive_other_slot_custom world = last_alive_slotnr (snd world)
 
 let read_turns_from_file filename =
   let ifi = open_in filename
