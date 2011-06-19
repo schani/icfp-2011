@@ -105,7 +105,36 @@
 		   (recur (list *se-twice* acc)
 			  (quot n 2)))))))))
 
-(defvar *masr* '(((:S :I) :I) ((:S (:K (:S (((:S :S) :I) (((:S :S) :I) (((:S :S) :I) (((:S :S) :I) ((:S ((:S (:K ((:help 0) 0))) (:K 8192))) ((:S ((:S (:K (:attack 0))) ((:S (:K :get)) (:K 64)))) (:K 768)))))))))) ((:S ((:S (:K :S)) :K)) :K))))
+(defn- make-masr [help-slot register-slot]
+  `(((:S :I) :I) ((:S (:K (:S (((:S :S) :I) (((:S :S) :I) (((:S :S) :I) (((:S :S) :I) ((:S ((:S (:K ((:help ~help-slot) ~help-slot))) (:K 8192))) ((:S ((:S (:K (:attack ~help-slot))) ((:S (:K :get)) (:K ~register-slot)))) (:K 768)))))))))) ((:S ((:S (:K :S)) :K)) :K))))
+
+(defvar *masr* (make-masr 0 64))
+
+(defvar *super-hand-optimized-masr*
+  (let [M [[:S :I] :I]
+	N [[:S :S] :I]
+	P [[:S [[:S [:K :S]] :K]] :K]
+	S1 [:S [[[:S [:K [:S [:K [[:help 0] 0]]]]] :K] 8192]]
+	S2 [[:S [:K [:attack 0]]] [[[:S [:K [:S [:K :get]]]] :K] 64]]
+	S3 [[[:S [:K [:S S2]]] :K] 768]]
+    [M [[:S [:K [:S [N [N [N [N [S1 S3]]]]]]]] P]]))
+
+(defvar *semi-hand-optimized-masr*
+  (let [M [[:S :I] :I]
+	N [[:S :S] :I]
+	P [[:S [[:S [:K :S]] :K]] :K]
+	S1 [:S [[[:S [:K [:S [:K [[:help 0] 0]]]]] :K] 8192]]
+	S2 [[:S [:K [:attack 0]]] [[[:S [:K [:S [:K :get]]]] :K] 64]]
+	S3 [[[:S [:K [:S S2]]] :K] 768]]
+    [M [[:S [:K [:S [N [N [N [N [
+
+				 [:S
+				  [[[:S [:K [:S [:K [[:help 0] 0]]]]] :K] 8192]
+				  ]
+
+				 [[:S [[:S [:K [:attack 0]]] [[:S [:K :get]] [:K 64]]]] [:K 768]]
+
+				 ]]]]]]]] P]]))
 
 (defvar *masr4* (lambda->ski
 		 ;;(make-get-apply-fn (make-param-help-attack-fn 0 8192 768) 64)
@@ -138,22 +167,35 @@
 		 (lambda->ski program)
 		 1 *regs*)))
 
-(shell-script "/tmp/beidler.sh"
+(shell-script "/tmp/empkillah.sh"
 	      (concat
-	       (ski->commands *masr* 65)
+	       (apply concat (map #(ski->commands % 16)
+					  (map (fn [x]
+						 `(((:attack ~x) 255) 5556))
+					       (range 4 256))))
+
 	       ;;[[:left -1 :init-255]]
 	       ;;(generate 255 64 nil)
 	       ;;[[:left -1 :kill-255]]
 	       ;;(repeat 16 [:right 65 :I])
 	       ;;[[:left -1 :init-0]]
-	       (ski->commands 0 64)
+	       ;;(ski->commands 0 64)
 	       ;;[[:right 65 :I]]
-	       (apply concat (repeat 256
+	       (apply concat (repeat 0
 	       [;;[:left -1 :death-loop]
 		[:right 65 :I]
 		;;[:right 65 :I]
 		[:left 64 :succ]
 		]))))
+
+(defn masr-shell-script [filename counter-slot masr-slot]
+  (shell-script filename
+		(concat (ski->commands (make-masr counter-slot counter-slot) masr-slot)
+			(binding [*regs* nil]
+			  (ski->commands 0 counter-slot))
+			(apply concat (repeat 256
+					      [[:right masr-slot :I]
+					       [:left counter-slot :succ]])))))
 
 (command-script "/tmp/masr.cmd"
 		(ski->commands *masr* 65))
@@ -163,6 +205,14 @@
 		(ski->commands *kill-255* 65))
 (command-script "/tmp/revive32.cmd"
 		(ski->commands (lambda->ski (make-apply-self-return (make-get-revive-fn 32))) 33))
+
+(command-script "/tmp/masr-8-4-noinit.cmd"
+		(ski->commands (make-masr 4 4) 8))
+(command-script "/tmp/masr-8-4-init.cmd"
+		(binding [*assume-inited* true]
+		  (ski->commands (make-masr 4 4) 8)))
+
+(masr-shell-script "/tmp/masr-8-4.sh" 4 8)
 
 ;;(spit-echoer "/tmp/beidler.sh" (make-help-attack-loop 0 8192 0 768))
 ;;(spit-echoer "/tmp/beidler.sh" (make-dec-loop 0))
