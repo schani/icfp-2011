@@ -36,6 +36,9 @@ let rec last_alive_slotnr slots = function
 let last_alive_own_slot world = last_alive_slotnr (fst world) 255
 let last_alive_other_slot world = last_alive_slotnr (snd world) 255
 
+let last_alive_own_slot world = last_alive_slotnr (fst world) 255
+let last_alive_other_slot world = last_alive_slotnr (snd world) 255
+
 let read_turns_from_file filename =
   let ifi = open_in filename
   in let l = ref []
@@ -63,23 +66,33 @@ let bootloop move_callback priv_data =
      and printer = quiet_printer
   in
   let rec loop ?(skipfirst=false) proponent_move world priv_data last_turn_stats =
-    let world, priv_data, turn_stats  =
-      if not skipfirst
-      then
-	let move, priv_data = move_callback context world proponent_move last_turn_stats priv_data
+    let do_work () =
+      try 
+	let world, priv_data, turn_stats  =
+	  if not skipfirst
+	  then
+	    let move, priv_data = move_callback context world proponent_move last_turn_stats priv_data
+	    in
+	      print_string (msg_of_turn move);
+	      flush stdout;
+	      let turn_stats = empty_turn_stats ()
+	      in let _, world, _, turn_stats = apply_player context world turn_stats move printer
+	      in
+		world, priv_data, turn_stats
+	  else (* we are player 1, so lets skip first move *)
+	    world, priv_data, last_turn_stats
+	in let move2 = (parse_input stdin printer ())
+	in let _, world, _, turn_stats = apply_player context world turn_stats move2 printer
 	in
-	  print_string (msg_of_turn move);
-	  flush stdout;
-	  let turn_stats = empty_turn_stats ()
-	  in let _, world, _, turn_stats = apply_player context world turn_stats move printer
-	  in
-	    world, priv_data, turn_stats
-      else (* we are player 1, so lets skip first move *)
-	world, priv_data, last_turn_stats
-    in let move2 = (parse_input stdin printer ())
-    in let _, world, _, turn_stats = apply_player context world turn_stats move2 printer
+	  (Some move2),world,priv_data,turn_stats
+      with
+	  x ->
+	    output_string stderr ("bootloop: got exception: %s" ^ (Printexc.to_string x));
+	    flush stderr;
+	    (Some (Right (0, I))),world,priv_data,(empty_turn_stats ()) (* never give up strategy *)
+    in let m, w, pd, ts = do_work ()
     in
-      loop (Some move2) world priv_data turn_stats
+      loop m w pd ts
   in let skipfirst = match Sys.argv with
     | [| _; "0" |] -> false
     | [| _; "1" |] -> true
