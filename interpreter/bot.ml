@@ -4,7 +4,7 @@ open Printer
 open Arg
 open Cards
 
-let bootloop ?(skipfirst=false) move_callback priv_data =
+let bootloop move_callback priv_data =
   let debug = true
   in let debug_context_error default_context_error = 
       fun string world -> (
@@ -34,5 +34,9 @@ let bootloop ?(skipfirst=false) move_callback priv_data =
     in let _, world, _ = apply_player context world move2 printer
     in
       loop proponent_move world priv_data
+  in let skipfirst = match Sys.argv with
+    | [| _; "0" |] -> false
+    | [| _; "1" |] -> true
+    | _ -> failwith (Printf.sprintf "%s: usage: %s 0|1" Sys.argv.(0) Sys.argv.(0))
   in
     loop ~skipfirst None (create_default_world ()) priv_data

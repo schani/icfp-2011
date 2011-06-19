@@ -39,11 +39,7 @@ let move_callback context world proponent_move privdata =
 
 let _ =
   let ifi = open_in "/icfpnfs/SCHANI/killer-fn.cmd"
-  and skipfirst = match Sys.argv with
-    | [| _; "0" |] -> false
-    | [| _; "1" |] -> true
-    | _ -> failwith "dunno what to do, gimme some args"
   in let turns = read_turns_from_file ifi quiet_printer
   in let pd = { pd_turns = turns; pd_stage = 0 }
   in
-    bootloop ~skipfirst move_callback pd
+    bootloop move_callback pd
