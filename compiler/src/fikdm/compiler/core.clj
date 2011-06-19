@@ -275,7 +275,8 @@
 	     (apply str (map (fn [command]
 			       (str (command-str "echo " command)
 				    "read ; read ; read\n"))
-			     commands)))))
+			     commands))
+	     "while true ; do\necho 2\necho 16\necho zero\nread ; read ; read\ndone\n")))
 
 (defn command-script [filename commands]
   (spit filename
