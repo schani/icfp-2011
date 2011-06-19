@@ -4,6 +4,28 @@ open Printer
 open Arg
 open Cards
 
+let fold_vitality world cmp start access =
+  Array.fold_right (fun e1 e2 -> cmp e1 e2) (access world) start
+
+let max_prop_vitality world =
+  fold_vitality world max 0 fst
+let max_opp_vitality world =
+  fold_vitality world max 0 snd
+let min_prop_vitality world =
+  fold_vitality world min 65535 fst
+let min_opp_vitality world =
+  fold_vitality world min 65535 snd
+
+let count_prop_zombies world =
+  fold_vitality world (fun a b -> if a > 2 then b + 1 else b) 0 fst
+let count_opp_zombies world =
+  fold_vitality world (fun a b -> if a > 2 then b + 1 else b) 0 snd
+
+let prop_zombies world =
+  List.filter (fun (x, _) -> x == -1) (Array.to_list (fst world))
+let prop_zombies world =
+  List.filter (fun (x, _) -> x == -1) (Array.to_list (snd world))
+
 let read_turns_from_file filename =
   let ifi = open_in filename
   in let l = ref []

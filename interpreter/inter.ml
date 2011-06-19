@@ -21,7 +21,7 @@ type skiexpr =
   | ZombieI of skiexpr
 *)
 type liveness = Dead | Alive
-	
+
 type 'world intercontext = {life: liveness;
 			    depth: int;
 			    read_own_vit: int -> 'world -> (int * 'world);
