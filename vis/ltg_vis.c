@@ -104,6 +104,7 @@ void	hsv2rgb(unsigned h, unsigned s, unsigned v,
 }
 
 
+#define	TI_IDLE		50
 
 
 
@@ -144,6 +145,7 @@ typedef	struct _stat {
 stat_t	player_stat[2];
 
 
+vtim_t	ti_idle;
 
 
 bool	is_slot_dead(slot_t *slot)
@@ -841,6 +843,8 @@ int	do_parse(void *dummy)
 	while (!feof(stdin)) {
 		fgets(line, sizeof(line), stdin);
 		ret = parse_input(line);
+		if (ret)
+			vis_timer_set(&ti_idle, TI_IDLE);
 	}
 	return 0;
 }
@@ -964,6 +968,11 @@ int	main(int argc, char *argv[])
 	unsigned frame = 0;
 
 	while (1) {
+		unsigned itv = vis_timer(&ti_idle);
+
+		if (!itv)
+			goto skip_redraw;
+
 		vis_calc_stats(&player_stat[0], player[0]);
 		vis_draw_slots(play0, player[0]);
 
@@ -1017,6 +1026,7 @@ int	main(int argc, char *argv[])
 
 		SDL_Flip(screen); //Refresh the screen
 
+	skip_redraw:;
 		SDL_Event event; /* Event structure */
 		if (SDL_PollEvent(&event)) {
 			if (event.type == SDL_QUIT)
