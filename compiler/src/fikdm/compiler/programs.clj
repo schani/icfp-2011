@@ -64,13 +64,30 @@
 		      (make-se-pass-fn (make-se-fn `(:get ~attack-field-slot))
 				       (make-param-attack-fn help-field attack-strength))))
 
-(defn make-repeat-effect-fn [n side-effect-fn]
-  (assert (>= n 1))
-  (if (= n 1)
-    side-effect-fn
-    (do
-      (assert (zero? (rem n 2)))
-      (list *se-twice* (make-repeat-effect-fn (quot n 2) side-effect-fn)))))
+;; takes the attack field as an argument
+(defn make-param-help-attack-fn [help-field help-strength attack-strength]
+  (let [attack-field (gensym 'attack-field)]
+    (make-se-combine-fn (make-se-fn `(((:help ~help-field) ~help-field) ~help-strength))
+			(make-param-attack-fn help-field attack-strength))))
+
+(defn make-get-apply-fn [param-side-effect-fn slot]
+  (make-se-pass-fn (make-se-fn `(:get ~slot))
+		   param-side-effect-fn))
+
+(defn make-repeat-effect-fn [n]
+  (assert (>= n 2))
+  (if (= n 2)
+    *se-twice*
+    (let [f (gensym 'f)]
+      `(:fn [~f]
+	    ~(loop [acc f
+		    n n]
+	       (if (= n 1)
+		 acc
+		 (do
+		   (assert (zero? (rem n 2)))
+		   (recur (list *se-twice* acc)
+			  (quot n 2)))))))))
 
 (defvar *regs* #{1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27})
 
@@ -83,15 +100,31 @@
 (shell-script "/tmp/beidler.sh"
 	      (concat
 	       (generate (lambda->ski
+			  ;;(make-get-apply-fn (make-param-help-attack-fn 0 8192 768) 64)
 			  (make-apply-self-return
-			   (make-repeat-effect-fn 8
-						  (make-help-get-attack-fn 0 8192 64 768)))) 65 *regs*)
-	       [[:left -1 :init-number]]
+			   (list (make-repeat-effect-fn 16)
+				 (make-help-get-attack-fn 0 8192 64 768)))
+			 )
+			 65 *regs*)
+	       ;;[[:left -1 :init-255]]
+	       ;;(generate 255 64 nil)
+	       ;;[[:left -1 :kill-255]]
+	       ;;(repeat 16 [:right 65 :I])
+	       ;;[[:left -1 :init-0]]
 	       (generate 0 64 nil)
-	       [[:left -1 :death-loop]
+	       ;;[[:right 65 :I]]
+	       (apply concat (repeat 256
+	       [;;[:left -1 :death-loop]
 		[:right 65 :I]
-		[:right 65 :I]
-		[:left 64 :succ]]))
+		;;[:right 65 :I]
+		[:left 64 :succ]
+		]))))
+
+(command-script "/tmp/beidler.cmd"
+		(generate (lambda->ski
+			   (make-apply-self-return
+			    (make-repeat-effect-fn 8
+						   (make-help-get-attack-fn 0 8192 64 768)))) 65 *regs*))
 
 ;;(spit-echoer "/tmp/beidler.sh" (make-help-attack-loop 0 8192 0 768))
 ;;(spit-echoer "/tmp/beidler.sh" (make-dec-loop 0))
