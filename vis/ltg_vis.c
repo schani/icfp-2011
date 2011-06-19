@@ -45,6 +45,9 @@ extern int usleep(unsigned long usec);
 #define	SCORE_WIDTH	128
 #define	SCORE_HEIGHT	38
 
+#define	MOVER_WIDTH	80
+#define	MOVER_HEIGHT	48
+
 #define	FONT_HEIGHT	10
 
 #define	START_VITALITY	10000
@@ -106,7 +109,7 @@ void	hsv2rgb(unsigned h, unsigned s, unsigned v,
 
 
 #define	TI_IDLE		50
-
+#define	TI_MOVER	40
 
 
 #define	FL_TOUCHED	1
@@ -114,11 +117,13 @@ void	hsv2rgb(unsigned h, unsigned s, unsigned v,
 #define	FL_HEALED	4
 #define	FL_RESET	8
 #define	FL_CHANGED	16
+#define	FL_INFO		32
 
 
 #define	TI_VITALITY	20
 #define	TI_CHANGED	16
 #define	TI_RESET	8
+#define	TI_INFO		32
 
 typedef	char vtim_t;
 
@@ -131,6 +136,7 @@ typedef	struct _slot {
 		vtim_t ti_vitality;
 		vtim_t ti_changed;
 		vtim_t ti_reset;
+		vtim_t ti_info;
 	} vtim;
 }	slot_t;
 
@@ -147,6 +153,7 @@ stat_t	player_stat[2];
 
 
 vtim_t	ti_idle;
+vtim_t	ti_mover;
 
 
 bool	is_slot_dead(slot_t *slot)
@@ -362,6 +369,13 @@ int vitality = 0;
 
 int player_win = 0;
 
+bool mover_active = false;
+int mover_play_id;
+int mover_slot_id;
+int mover_x;
+int mover_y;
+
+
 #define	PLAYER_WIN_A	1
 #define	PLAYER_WIN_B	2
 #define	PLAYER_DRAW	3
@@ -529,6 +543,17 @@ void	vis_draw_slot(SDL_Surface *dst, unsigned x, unsigned y, slot_t *slot)
 	boxRGBA(dst, xp, yp, xp + SLOT_WIDTH - 2, yp + SLOT_HEIGHT - 2,
 		r, g, b, 255);
 
+	if (slot->flags & FL_INFO) { 
+		unsigned tv = vis_timer(&slot->vtim.ti_info);
+
+		if (tv) {
+			rectangleRGBA(dst, xp, yp, 
+				xp + SLOT_WIDTH - 2, yp + SLOT_HEIGHT - 2,
+				255, 255, 255, tv*16);
+		} else
+			slot->flags &= ~FL_INFO;
+	}
+
 	char line[3][64] =  { "", "" };
 
 	if (slot->seq) {
@@ -683,6 +708,57 @@ void	vis_draw_win(SDL_Surface *dst0, SDL_Surface *dst1)
 		break;
 	} 
 }
+
+
+void	vis_draw_mover(SDL_Surface *dst, unsigned play_id, unsigned slot_id)
+{
+	boxRGBA(dst, 0, 0, MOVER_WIDTH, MOVER_HEIGHT, 64, 64, 64, 128);
+	rectangleRGBA(dst, 0, 0, MOVER_WIDTH - 1, MOVER_HEIGHT - 1, 128, 128, 128, 128);
+	
+	slot_t *slot = &player[play_id][slot_id];
+	
+	char line[3][64] =  { "", "", "" };
+
+	sprintf(line[0], "#%d", slot_id);
+	if (slot->seq) {
+		sprintf(line[1], "{%ld}", strlen(slot->seq));
+	} else {
+		sprintf(line[1], "%ld", slot->field);
+	}
+
+	sprintf(line[2], "%ld", slot->vitality);
+
+	for (int i=0; i<3; i++)
+		vis_draw_string_center_shaded(dst, MOVER_WIDTH / 2, 4 + i * 13,
+			stats_fnt, line[i], 255, 255, 255, 64, 64, 64);
+}
+
+
+
+unsigned hid_slot_at(unsigned x, unsigned y, unsigned *play_id)
+{
+	unsigned xc, yc;
+
+	if (x < VID_WIDTH / 2) {
+		*play_id = 0;
+		
+		xc = (x - 10) / SLOT_WIDTH;
+		yc = (y - 10) / SLOT_HEIGHT;
+	} else {
+		*play_id = 1;
+	
+		xc = (x - (VID_WIDTH - 10 - PLAY_WIDTH)) / SLOT_WIDTH;
+		yc = (y - 10) / SLOT_HEIGHT;
+	}
+
+	if ((xc < 0) || (xc > 15))
+		return -1;
+	if ((yc < 0) || (yc > 15))
+		return -1;
+	return yc * 16 + xc;
+}
+
+
 
 
 
@@ -853,7 +929,7 @@ bool	parse_win(char *line)
 		if (!opt_quiet)
 			printf("!! player %c loses by invalid output at turn %ld\n",
 				play_id ? 'B' : 'A', turn);
-		player_win = play_id ? PLAYER_WIN_B : PLAYER_WIN_A;
+		player_win = play_id ? PLAYER_WIN_A : PLAYER_WIN_B;
 		return true;
 	}
 	return true;
@@ -1038,6 +1114,9 @@ int	main(int argc, char *argv[])
 	score = SDL_CreateRGBSurface(SDL_SWSURFACE,
 		SCORE_WIDTH, SCORE_HEIGHT, 32, 0, 0, 0, 0);
 
+	SDL_Surface *mover;
+	mover = SDL_CreateRGBSurface(SDL_SWSURFACE,
+		MOVER_WIDTH, MOVER_HEIGHT, 32, 0, 0, 0, 0);
 
 	SDL_WM_SetCaption("LTG Sim", "LTG Sim");
 
@@ -1181,6 +1260,23 @@ int	main(int argc, char *argv[])
 
 		SDL_BlitSurface(score, &xsrcRect, screen, &scoreRect);
 
+		if (mover_active) {
+			unsigned mtv = vis_timer(&ti_mover);
+
+			if (mtv == 0)
+				mover_active = false;
+
+			vis_draw_mover(mover, mover_play_id, mover_slot_id);
+
+			SDL_Rect srcRect = { 0, 0, MOVER_WIDTH, MOVER_HEIGHT };
+			SDL_Rect dstRect = { 
+				MAX(MIN(mover_x, (VID_WIDTH - MOVER_WIDTH - 10)), 10), 
+				MAX(MIN(mover_y + 10, (VID_HEIGHT - MOVER_HEIGHT - 10)), 10), 
+				MOVER_WIDTH, MOVER_HEIGHT };
+
+			SDL_BlitSurface(mover, &srcRect, screen, &dstRect);
+		}
+
 		SDL_Flip(screen); //Refresh the screen
 
 	skip_redraw:;
@@ -1229,6 +1325,34 @@ int	main(int argc, char *argv[])
 					break;
 				default:
 					break;
+				}
+			}
+			if (event.type == SDL_MOUSEBUTTONDOWN) {
+				unsigned play_id; 
+				mover_slot_id = hid_slot_at(
+					event.button.x, event.button.y, &play_id);
+				mover_play_id = play_id;
+				mover_x = event.button.x;
+				mover_y = event.button.y;
+				
+				if (mover_slot_id >= 0) {
+					slot_t *slot = &player[play_id][mover_slot_id];
+				
+					switch (event.button.button) {
+					case SDL_BUTTON_LEFT:
+						vis_timer_set(&ti_idle, TI_IDLE);
+						vis_timer_set(&ti_mover, 255);
+						mover_active = true;
+						
+						vis_timer_set(&slot->vtim.ti_info, TI_INFO);
+						slot->flags |= FL_INFO;
+					}
+				}
+			}
+			if (event.type == SDL_MOUSEBUTTONUP) {
+				if (mover_active) {
+					vis_timer_set(&ti_idle, TI_IDLE);
+					vis_timer_set(&ti_mover, TI_MOVER);
 				}
 			}
 		}
