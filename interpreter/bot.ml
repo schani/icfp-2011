@@ -56,7 +56,7 @@ let bootloop move_callback priv_data =
   let debug = true
   in let debug_context_error default_context_error = 
       fun string world -> (
-	Printf.printf "Exception: %s\n" string;
+	Printf.fprintf stderr "Exception: %s\n" string;
 	default_context_error string world
       )
   in let context = if debug then 
@@ -86,10 +86,13 @@ let bootloop move_callback priv_data =
 	in
 	  (Some move2),world,priv_data,turn_stats
       with
-	  x ->
-	    output_string stderr ("botloop: got exception: %s" ^ (Printexc.to_string x));
-	    flush stderr;
-	    (Some (Right (0, I))),world,priv_data,(empty_turn_stats ()) (* never give up strategy *)
+	| End_of_file -> exit 0
+	| x ->
+	    let msg =  ("botloop: got exception: " ^ (Printexc.to_string x) ^ "\n")
+	    in
+	      output_string stderr msg;
+	      flush stderr;
+	      (Some (Right (0, I))),world,priv_data,(empty_turn_stats ()) (* never give up strategy *)
     in let m, w, pd, ts = do_work ()
     in
       loop m w pd ts
