@@ -254,11 +254,13 @@
     (set-field! s ski)
     gen))
 
-(defvar *regs* #{1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27})
+(defvar *regs* #{1 2 3 4 5 6 7}) (quot (* 5556 9) 10)
 
 (defn ski->commands [ski s]
   (binding [*fields* (into {} (map (fn [r] [r :I]) *regs*))]
-    (generate ski s *regs*)))
+    (let [commands (generate ski s *regs*)]
+      (info (str "generated " (count commands) " commands"))
+      commands)))
 
 (defn- command-str [prefix command]
   (let [[side slot card] command]
