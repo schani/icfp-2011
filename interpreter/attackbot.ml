@@ -72,7 +72,7 @@ let move_callback context world proponent_move turn_stats privdata =
 	Left (I, 0), privdata
 
 let _ =
-  let turns = read_turns_from_file "/icfpnfs/SCHANI/killer-fn.cmd"
+  let turns = read_turns_from_file "functions/masr.cmd"
   in let pd = { pd_turns = turns; pd_stage = 0; pd_victim = 0}
   in
     bootloop move_callback pd
