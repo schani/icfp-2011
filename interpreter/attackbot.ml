@@ -12,20 +12,23 @@ type privdata = {
   pd_victim: int;
 }
 
+let calculate_64_er_slot_value slot_to_attack =
+  255 - slot_to_attack
+
 let move_callback context world proponent_move turn_stats privdata =
   try
     let move, rest, victim, stage =
       match privdata.pd_stage with
-	| 0 (* kill enemy field 0, not yet implemented *)
+	| 0 (* kill enemy field 255, not yet implemented *)
 	| 1 -> begin (* apply commands from file *)
 	    match privdata.pd_turns with
-	      | turn :: [] -> turn, [], 0, 2
-	      | turn :: rest -> turn, rest, 0, 1
+	      | turn :: [] -> turn, [], 255, 2
+	      | turn :: rest -> turn, rest, 255, 1
 	      | _ -> failwith "should not happen"
 	  end
 	| 2 -> begin (* search for cool *)
-	    let victim = (255 - (last_alive_other_slot world))
-	    in let job = write_number_to_slot victim 64
+	    let victim = (last_alive_other_slot world)
+	    in let job = write_number_to_slot (calculate_64_er_slot_value victim) 64
 	    in
 	      match job with
 		| jobfirst :: jobrest ->
@@ -49,10 +52,10 @@ let move_callback context world proponent_move turn_stats privdata =
 	      if vicvit > 0 then (* victim still alive *)
 		Right (65, I), [], victim, 5
 	      else (* victim killed, we need new target *)
-		  let next_victim = (255 - (last_alive_other_slot world))
-		  in let possible_job = write_number_to_slot next_victim 64
+		  let next_victim = last_alive_other_slot world
+		  in let possible_job = write_number_to_slot (calculate_64_er_slot_value next_victim) 64
 		  in
-		    if (List.length possible_job) < (next_victim - victim) then (* new number *)
+		    if (List.length possible_job) < (victim - next_victim) then (* new number *)
 		      match possible_job with
 			| jobfirst :: jobrest ->
 			    jobfirst, jobrest, next_victim, 3
@@ -60,7 +63,7 @@ let move_callback context world proponent_move turn_stats privdata =
 					 "move_callback: write_number_to_slot failed")
 		    else (* reachable by suckas *)
 		      let sucka = Left (Succ, 64)
-		      in let suckas = (Array.to_list (Array.make (next_victim - victim - 1) sucka))
+		      in let suckas = (Array.to_list (Array.make (victim - next_victim - 1) sucka))
 		      in
 			sucka, suckas, next_victim, 3
 	| _ -> raise (Bot_error "move_callback got illegal state")
