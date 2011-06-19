@@ -73,6 +73,11 @@
     `(:fn [~attack-field]
 	  ~(make-help-attack-fn help-field help-strength attack-field attack-strength))))
 
+;; takes the revive field from a slot
+(defn make-get-revive-fn [slot]
+  (make-se-pass-fn (make-get-fn slot)
+		   :revive))
+
 (defvar *doubler*
   (let [sep (gensym 'sep)
 	i (gensym 'i)]
@@ -159,6 +164,8 @@
 		(generate *masr4* 65 *regs*))
 (command-script "/tmp/kill255.cmd"
 		(generate *kill-255* 65 *regs*))
+(command-script "/tmp/revive32.cmd"
+		(generate (lambda->ski (make-apply-self-return (make-get-revive-fn 32))) 33 *regs*))
 
 ;;(spit-echoer "/tmp/beidler.sh" (make-help-attack-loop 0 8192 0 768))
 ;;(spit-echoer "/tmp/beidler.sh" (make-dec-loop 0))
