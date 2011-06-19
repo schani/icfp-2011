@@ -357,7 +357,7 @@ let apply_zombies world context =
     else
       loop (i+1) world
   in loop 0 world
-      
+
 let apply_player context world turn_stats move debug =
   let world = apply_zombies world context in
   let world, turn_stats = apply_move move world context turn_stats debug in 

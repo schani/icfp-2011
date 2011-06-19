@@ -39,16 +39,34 @@ let last_alive_other_slot world = last_alive_slotnr (snd world) 255
 let last_alive_own_slot_custom world = last_alive_slotnr (fst world)
 let last_alive_other_slot_custom world = last_alive_slotnr (snd world)
 
+
 let biggest_other_slot world =
-  fold_world world (fun a (slotmax, maxslot) ->
-		      let asize = sizeof_skiexpr (snd a)
-		      in
-			if asize > slotmax then
-			  (asize, (snd a))
-			else
-			  (slotmax, maxslot)) (0, Num 0) snd
-  
- let read_turns_from_file filename =
+  let slots = (snd world)
+  in let rec find_biggest b_i b_v = function
+    | -1 -> b_i
+    | i -> let v = (sizeof_skiexpr (snd slots.(b_i)))
+      in
+	if v > b_v then
+	  find_biggest i v (i - 1)
+	else
+	  find_biggest b_i b_v (i - 1)
+  in
+    find_biggest ((Array.length slots) - 1) (-1) (-1)
+
+(*
+let biggest_other_slot world =
+  fst (fold_world world (fun a (slotmax, maxslot) ->
+			   let asize = sizeof_skiexpr (snd a)
+			   in
+			     if asize >= slotmax then (
+			       Printf.fprintf stderr "%% SCHASS NEWBEST=%i index=%i\n" asize (fst a);
+			       (asize, (snd a))
+			     )
+			     else
+			       (slotmax, maxslot)) (0, Num 0) snd)
+*)
+
+let read_turns_from_file filename =
   let ifi = open_in filename
   in let l = ref []
   in
