@@ -207,6 +207,13 @@ card_t	cards[] = {
 	{ .id = 0 }};
 
 
+static  char *	cmd_name;
+char	opt_brief = 0;
+char	opt_quiet = 0;
+char	opt_single = 0;
+uint64_t	opt_halt = ~0;
+
+
 char *	card_name_from_id(int id)
 {
 	for (int i = 0; i < sizeof(cards)/sizeof(card_t); i++)
@@ -681,7 +688,6 @@ void	vis_draw_win(SDL_Surface *dst0, SDL_Surface *dst1)
 		vis_draw_string_center_shaded(dst0, PLAY_WIDTH / 2, PLAY_HEIGHT / 2,
 			win_fnt, lose_txt, 255, 0, 0, 0, 0, 0);
 		break;
-	
 	case PLAYER_DRAW:
 		vis_draw_string_center_shaded(dst0, PLAY_WIDTH / 2, PLAY_HEIGHT / 2,
 			win_fnt, draw_txt, 255, 255, 0, 0, 0, 0);
@@ -697,6 +703,10 @@ bool	parse_turn_info(char *line)
 {
 	sscanf(line, "###### turn %ld", &turn);
 	printf("\nturn %ld\n", turn);
+	
+	while (turn >= opt_halt)
+		usleep(100000);
+
 	return true;
 }
 
@@ -708,9 +718,10 @@ bool	parse_player_info(char *line)
 	n = sscanf(line, "player %d applied card %s to slot %d",
 		&play_id, card_name, &slot_id);
 	if (n == 3) {
-		printf("%c: %s -> [%d]\n",
-			play_id ? 'B' : 'A',
-			card_name, slot_id);
+		if (!opt_quiet)
+			printf("%c: %s -> [%d]\n",
+				play_id ? 'B' : 'A',
+				card_name, slot_id);
 			
 		card_t *card = card_from_name(card_name);
 		if (card) {
@@ -724,9 +735,10 @@ bool	parse_player_info(char *line)
 	n = sscanf(line, "player %d applied slot %d to card %s",
 		&play_id, &slot_id, card_name);
 	if (n == 3) {
-		printf("%c: [%d] -> %s\n",
-			play_id ? 'B' : 'A',
-			slot_id, card_name);
+		if (!opt_quiet)
+			printf("%c: [%d] -> %s\n",
+				play_id ? 'B' : 'A',
+				slot_id, card_name);
 
 		card_t *card = card_from_name(card_name);
 		if (card) {
@@ -742,7 +754,8 @@ bool	parse_player_info(char *line)
 bool	parse_player_turn(char *line)
 {
 	sscanf(line, "*** player %d'", &play_id);
-	printf("player %c\n", play_id ? 'B' : 'A');
+	if (!opt_quiet)
+		printf("player %c\n", play_id ? 'B' : 'A');
 	return false;
 }
 
@@ -753,7 +766,8 @@ bool	parse_slot(char *line)
 	if (n == 3) {
 		slot_t *slot =  &player[play_id][slot_id];
 
-		printf("[%d]: |%d| %s\n", slot_id, vitality, expr);
+		if (!opt_brief && !opt_quiet)
+			printf("[%d]: |%d| %s\n", slot_id, vitality, expr);
 
 		if (slot->vitality < vitality) {
 			slot->vitality = vitality;
@@ -798,7 +812,8 @@ bool	parse_slot_reset(char *line)
 	if (n == 1) {
 		slot_t *slot =  &player[play_id][slot_id];
 
-		printf("slot %d reset\n", slot_id);
+		if (!opt_quiet)
+			printf("slot %d reset\n", slot_id);
 		slot->flags |= FL_RESET;
 		vis_timer_set(&slot->vtim.ti_reset, TI_RESET);
 	}
@@ -813,7 +828,8 @@ bool	parse_expr(char *line)
 
 bool	parse_exception(char *line)
 {
-	printf("%s\n", line);
+	if (!opt_quiet)
+		printf("%s\n", line);
 	player_stat[play_id].exceptions++;
 	cards[15].flags |= FL_LEFT;
 	cards[15].ti_applied = TI_APPLIED;
@@ -828,25 +844,28 @@ bool	parse_win(char *line)
 	n = sscanf(line, "!! player %d wins by %d:%d after turn %ld",
 		&play_id, &score0, &score1, &turn);
 	if (n == 4) {
-		printf("!! player %c wins by %d:%d after turn %ld\n",
-			play_id ? 'B' : 'A',
-			score0, score1, turn);
+		if (!opt_quiet)
+			printf("!! player %c wins by %d:%d after turn %ld\n",
+				play_id ? 'B' : 'A',
+				score0, score1, turn);
 		player_win = play_id ? PLAYER_WIN_B : PLAYER_WIN_A;
 		return true;
 	}
 	n = sscanf(line, "!! draw by %d:%d after turn %ld",
 		&score0, &score1, &turn);
 	if (n == 3) {
-		printf("!! draw by %d:%d after turn %ld\n",
-			score0, score1, turn);
+		if (!opt_quiet)
+			printf("!! draw by %d:%d after turn %ld\n",
+				score0, score1, turn);
 		player_win = PLAYER_DRAW;
 		return true;
 	}
 	n = sscanf(line, "!! player %d loses by invalid output at turn %ld",
 		&play_id, &turn);
 	if (n == 2) {
-		printf("!! player %c loses by invalid output at turn %ld\n",
-			play_id ? 'B' : 'A', turn);
+		if (!opt_quiet)
+			printf("!! player %c loses by invalid output at turn %ld\n",
+				play_id ? 'B' : 'A', turn);
 		player_win = play_id ? PLAYER_WIN_B : PLAYER_WIN_A;
 		return true;
 	}
@@ -941,9 +960,57 @@ int	do_parse(void *dummy)
 }
 
 
+#define	VERSION		"0.11"
+
+#define	OPTIONS		"hbqsn:"
+
 
 int	main(int argc, char *argv[])
 {
+	extern int optind;
+	extern char *optarg;
+	char c, errflg = 0;
+
+	cmd_name = argv[0];
+	while ((c = getopt(argc, argv, OPTIONS)) != EOF) {
+	    switch (c) {
+	    case 'h':
+		fprintf(stderr,
+		    "This is %s " VERSION "\n"
+		    "options are:\n"
+		    "-h        print this help message\n"
+		    "-b        brief output (don't show slots)\n"
+		    "-q        quiet (don't show anything)\n"
+		    "-s        single step\n"
+		    "-n <num>  halt at turn <num>\n"
+		    , cmd_name);
+		exit(0);
+		break;
+	    case 'b':
+		opt_brief = 1;
+		break;
+	    case 'q':
+		opt_quiet = 1;
+		break;
+	    case 's':
+		opt_single = 1;
+		break;
+	    case 'n':
+		opt_halt = atol(optarg);
+		break;
+	    case '?':
+	    default:
+		errflg++;
+		break;
+	    }
+	}
+	if (errflg) {
+	    fprintf(stderr, 
+		"Usage: %s -[" OPTIONS "] ...\n"
+		"%s -h for help.\n",
+		cmd_name, cmd_name);
+	    exit(2);
+	}
 
 	SDL_Surface *screen;
 
@@ -1132,6 +1199,16 @@ int	main(int argc, char *argv[])
 		if (SDL_PollEvent(&event)) {
 			if (event.type == SDL_QUIT)
 				break;
+			if (event.type == SDL_KEYDOWN) {
+			
+				switch(event.key.keysym.sym){
+				case SDLK_SPACE:
+					opt_halt++;
+					break;
+				default:
+					break;
+				}
+			}
 		}
 
 		usleep(10000);
