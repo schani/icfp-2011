@@ -6,22 +6,22 @@ open Cards
 
 exception Bot_error of string
 
-let fold_vitality world cmp start access =
+let fold_world world cmp start access =
   Array.fold_right (fun e1 e2 -> cmp e1 e2) (access world) start
 
 let max_own_vitality world =
-  fold_vitality world max 0 fst
+  fold_world world max 0 fst
 let max_other_vitality world =
-  fold_vitality world max 0 snd
+  fold_world world max 0 snd
 let min_own_vitality world =
-  fold_vitality world min 65535 fst
+  fold_world world min 65535 fst
 let min_other_vitality world =
-  fold_vitality world min 65535 snd
+  fold_world world min 65535 snd
 
 let count_own_zombies world =
-  fold_vitality world (fun a b -> if a > 2 then b + 1 else b) 0 fst
+  fold_world world (fun a b -> if (fst a) > 0 then b + 1 else b) 0 fst
 let count_other_zombies world =
-  fold_vitality world (fun a b -> if a > 2 then b + 1 else b) 0 snd
+  fold_world world (fun a b -> if (fst a) > 0 then b + 1 else b) 0 snd
 
 let prop_zombies world =
   List.filter (fun (x, _) -> x == -1) (Array.to_list (fst world))
@@ -39,7 +39,16 @@ let last_alive_other_slot world = last_alive_slotnr (snd world) 255
 let last_alive_own_slot_custom world = last_alive_slotnr (fst world)
 let last_alive_other_slot_custom world = last_alive_slotnr (snd world)
 
-let read_turns_from_file filename =
+let biggest_other_slot world =
+  fold_world world (fun a (slotmax, maxslot) ->
+		      let asize = sizeof_skiexpr (snd a)
+		      in
+			if asize > slotmax then
+			  (asize, (snd a))
+			else
+			  (slotmax, maxslot)) (0, Num 0) snd
+  
+ let read_turns_from_file filename =
   let ifi = open_in filename
   in let l = ref []
   in

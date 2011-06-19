@@ -19,6 +19,8 @@ type skiexpr =
   | HelpIJ of (skiexpr * skiexpr)
   | ZombieI of skiexpr
 
+val sizeof_skiexpr: skiexpr -> int
+
 type slot = int * skiexpr
 type default_world_type = (slot array)*(slot array)
 

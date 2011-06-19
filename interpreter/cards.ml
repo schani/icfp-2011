@@ -45,3 +45,11 @@ let empty_move_stats () =
    }
 
 let empty_turn_stats () = (empty_move_stats ()), (empty_move_stats ())
+
+let rec sizeof_skiexpr = function
+  | Card _
+  | Num _ -> 1
+  | Lambda (e1, e2) -> (sizeof_skiexpr e1) + (sizeof_skiexpr e2)
+  | _ ->
+      Printf.fprintf stderr "%% WARNING: sizeof_skiexpr called on nund CML stuff\n";
+      0
