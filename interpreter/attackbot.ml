@@ -33,7 +33,7 @@ let move_callback context world proponent_move turn_stats privdata =
 	    match turns with
 	      | turn :: [] -> turn, new_state
 	      | turn :: rest -> turn, S_APPLY_TURNS (rest, new_state)
-	      | _ -> failwith "should not happen"
+	      | [] -> state_machine new_state
 	  end
 	| S_MASR_LAUNCH_ATTACK victim ->
 	    let vicvit, _ = context.read_other_vit victim world
