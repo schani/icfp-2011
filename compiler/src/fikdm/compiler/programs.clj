@@ -147,11 +147,10 @@
 		[:left 64 :succ]
 		]))))
 
-(command-script "/tmp/beidler.cmd"
-		(generate (lambda->ski
-			   (make-apply-self-return
-			    (make-repeat-effect-fn 8
-						   (make-help-get-attack-fn 0 8192 64 768)))) 65 *regs*))
+(command-script "/tmp/masr.cmd"
+		(generate
+		 '(((:S :I) :I) ((:S (:K (:S (((:S :S) :I) (((:S :S) :I) (((:S :S) :I) (((:S :S) :I) ((:S ((:S (:K ((:help 0) 0))) (:K 8192))) ((:S ((:S (:K (:attack 0))) ((:S (:K :get)) (:K 64)))) (:K 768)))))))))) ((:S ((:S (:K :S)) :K)) :K)))
+		 65 *regs*))
 
 ;;(spit-echoer "/tmp/beidler.sh" (make-help-attack-loop 0 8192 0 768))
 ;;(spit-echoer "/tmp/beidler.sh" (make-dec-loop 0))
