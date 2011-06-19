@@ -53,22 +53,9 @@ let biggest_other_slot world =
   in let res =
       find_biggest (-1) (-1) ((Array.length slots) - 1)
   in
+    Printf.fprintf stderr "%% KURDE best index=%i vit=%i\n" res (fst slots.(res));
     res
 
-let find_healing_slot world =
-  let slots = (snd world)
-  in let rec find_biggest = function
-    | 12 -> None
-    | i ->
-	if (fst slots.(i)) > 8000 then
-	  Some i
-	else
-	  find_biggest (i - 1)
-  in let res =
-      find_biggest ((Array.length slots) - 1)
-  in
-    res
-  
 (*
 let biggest_other_slot world =
   fst (fold_world world (fun a (slotmax, maxslot) ->
