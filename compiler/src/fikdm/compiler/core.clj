@@ -129,7 +129,7 @@
        ~(expand-if-lets bindings consequent (list alt)))))
 
 (defn- alloc-slot [free]
-  (let [slot (first free)]
+  (let [slot (first (sort free))]
     (assert (number? slot))
     (do
       (info (str "alloced slot " slot))
@@ -142,10 +142,11 @@
 	:zero))
 
 (declare *fields*)
+(defvar *assume-inited* false)
 
 (defn- gen-primitive? [x s]
   (if-let [card (primitive-card? x)]
-    (let [put (if (= (*fields* s) :I)
+    (let [put (if (and *assume-inited* (= (*fields* s) :I))
 		[]
 		[[:left s :put]])]
       (if (= card :I)
@@ -184,10 +185,9 @@
 					  [[:right s r-card]])
 				  nil))))))
 
-(defn- generate-mn [s x-code y-code m-card n-card]
+(defn- generate-mn [s xy-code m-card n-card]
   (concat
-   x-code
-   y-code
+   xy-code
    [[:left s :K]
     [:left s :S]
     [:right s m-card]
@@ -206,14 +206,21 @@
   ;;(info (str "field " s " <- " ski))
   (set! *fields* (assoc *fields* s ski)))
 
-(defn- generate-complex [s free x-code y]
+(defn- generate-complex [s free x y]
   (assert (not (contains? free s)))
   ;;(info (str "generating complex for " y))
-  (let [[os os-free] (alloc-slot free)]
-    (generate-mn s x-code
-		 (concat (generate y os os-free)
-			 (generate os 0 nil)
-			 [[:left 0 :get]])
+  (let [[os os-free] (alloc-slot free)
+	x-is-simpler (< (count (flatten x)) (count (flatten y)))
+	hard-code (if x-is-simpler
+		    (generate y os (union os-free #{s}))
+		    (generate x s free))
+	simple-code (if x-is-simpler
+		      (generate x s os-free)
+		      (generate y os os-free))]
+    (generate-mn s (concat hard-code
+			   simple-code
+			   (generate os 0 nil)
+			   [[:left 0 :get]])
 		 :get :zero)))
 
 (defn- generate [ski s free]
@@ -228,31 +235,32 @@
 			  (if-let [x-card (primitive-card? x)]
 			    (concat (generate [M N] s free)
 				    [[:left s x-card]])
-			    (let [x-code (generate x s free)]
-			      (if-lets [m-card (primitive-card? M)
-					n-card (primitive-card? N)]
-				       (generate-mn s x-code [] m-card n-card)
-				       (if-let [y-simple (gen-simple? [M N] 0)]
-					 (do
-					   (set-field! 0 [M N])
-					   (generate-mn s x-code y-simple :get :zero))
-					 (do
-					   (info (str "complex " x " ||||||||||||||| " [M N]))
-					   (generate-complex s free x-code [M N]))))))
+			    (if-lets [m-card (primitive-card? M)
+				      n-card (primitive-card? N)]
+				     (generate-mn s (generate x s free) m-card n-card)
+				     (if-let [y-simple (gen-simple? [M N] 0)]
+				       (do
+					 (set-field! 0 [M N])
+					 (generate-mn s (concat (generate x s free) y-simple) :get :zero))
+				       (do
+					 (info (str "complex " x " ||||||||||||||| " [M N]))
+					 (generate-complex s free x [M N])))))
 
 			  [?x ?y]
-			  (generate-complex s free (generate x s free) y)
+			  (generate-complex s free x y)
 
 			  ?x
 			  (throw (Exception. (str "Malformed SKI " x)))))]
     (set-field! s ski)
     gen))
 
-(defvar *regs* #{1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27})
+(defvar *regs* #{1 2 3 4 5 6 7}) (quot (* 5556 9) 10)
 
 (defn ski->commands [ski s]
   (binding [*fields* (into {} (map (fn [r] [r :I]) *regs*))]
-    (generate ski s *regs*)))
+    (let [commands (generate ski s *regs*)]
+      (info (str "generated " (count commands) " commands"))
+      commands)))
 
 (defn- command-str [prefix command]
   (let [[side slot card] command]
