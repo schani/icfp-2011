@@ -39,19 +39,21 @@ let move_callback context world proponent_move turn_stats privdata =
 	      | [] -> state_machine stored_state
 	  end
 	| S_MASR_FIND_VICTIM selector ->
+(*	    botdebug ("VORM DEPPATEN SCHASS\n");*)
 	    let victim = selector world
 	    in
 	      botdebug (sprintf "move_callback: S_MASR_FIND_VICTIM: %i\n" victim);
-	      (
-		let expr, _ = context.read_other_field 1 world
-		in
-		  botdebug (sprintf "slot1 field=%s\n" (string_of_expr expr))
-	      );
 	      let job = write_number_to_slot (calculate_64_er_slot_value victim) 64
 	      in
 		state_machine (S_APPLY_TURNS (job, S_MASR_LAUNCH_ATTACK victim))
 	| S_MASR_LAUNCH_ATTACK victim ->
 	    botdebug (sprintf "move_callback: S_MASR_LAUNCH_ATTACK: attacking %i\n" victim);
+	    (
+	      let expr, _ = context.read_other_field victim world
+	      and vit, _ = context.read_other_vit victim world
+	      in
+		botdebug (sprintf "slot %i field=%s vit=%i\n" victim (string_of_expr expr) vit)
+	    );
 	    let vicvit, _ = context.read_other_vit victim world
 	    in
 	      if vicvit > 0 then
@@ -60,19 +62,22 @@ let move_callback context world proponent_move turn_stats privdata =
 		state_machine (S_MASR_FIND_NEXT_VICTIM victim)
 	| S_MASR_FIND_NEXT_VICTIM old_victim ->
 	    botdebug (sprintf "move_callback: S_MASR_FIND_NEXT_VICTIM: old_victim=%i\n" old_victim);
-	    let next_victim = last_alive_other_slot world
-	    in let possible_job = write_number_to_slot (calculate_64_er_slot_value next_victim) 64
-	    in
-	      if (List.length possible_job) < (old_victim - next_victim) then (* create new number *)
-		state_machine (S_MASR_FIND_VICTIM (function _ -> next_victim))
-	      else
-		let new_vic_fun = Left (Succ, 64)
-		in let new_vic_funs = (Array.to_list (Array.make (old_victim - next_victim) new_vic_fun))
-		in
-		  state_machine (S_APPLY_TURNS (new_vic_funs, S_MASR_LAUNCH_ATTACK next_victim))
+	    if old_victim <= 0 then
+	      state_machine (S_MASR_FIND_VICTIM (function _ -> 255))
+	    else
+	      let next_victim = old_victim - 1
+	      in let possible_job = write_number_to_slot (calculate_64_er_slot_value next_victim) 64
+	      in
+		if (List.length possible_job) < (old_victim - next_victim) then (* create new number *)
+		  state_machine (S_MASR_FIND_VICTIM (function _ -> next_victim))
+		else
+		  let new_vic_fun = Left (Succ, 64)
+		  in let new_vic_funs = (Array.to_list (Array.make (old_victim - next_victim) new_vic_fun))
+		  in
+		    state_machine (S_APPLY_TURNS (new_vic_funs, S_MASR_LAUNCH_ATTACK next_victim))
     in let move, next_state = state_machine privdata.pd_state
     in
-	move, { pd_state = next_state }
+      move, { pd_state = next_state }
   with
       Bot_error str ->
 	botdebug ("move_callback: Bot_error: %s\n" ^ str);

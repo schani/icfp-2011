@@ -44,14 +44,17 @@ let biggest_other_slot world =
   let slots = (snd world)
   in let rec find_biggest b_i b_v = function
     | -1 -> b_i
-    | i -> let v = (sizeof_skiexpr (snd slots.(b_i)))
+    | i -> let v = (sizeof_skiexpr (snd slots.(i)))
       in
-	if v > b_v then
+	if (v > b_v) && (fst slots.(i)) > 0 then
 	  find_biggest i v (i - 1)
 	else
 	  find_biggest b_i b_v (i - 1)
+  in let res =
+      find_biggest (-1) (-1) ((Array.length slots) - 1)
   in
-    find_biggest ((Array.length slots) - 1) (-1) (-1)
+    Printf.fprintf stderr "%% KURDE best index=%i vit=%i\n" res (fst slots.(res));
+    res
 
 (*
 let biggest_other_slot world =

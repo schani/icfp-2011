@@ -47,9 +47,15 @@ let empty_move_stats () =
 let empty_turn_stats () = (empty_move_stats ()), (empty_move_stats ())
 
 let rec sizeof_skiexpr = function
+  | Error -> 0
   | Card _
   | Num _ -> 1
+  | Kx e
+  | AttackI e
+  | HelpI e
+  | ZombieI e
+  | Sf e -> sizeof_skiexpr e
+  | HelpIJ (e1, e2)
+  | AttackIJ (e1, e2)
+  | Sfg (e1, e2)
   | Lambda (e1, e2) -> (sizeof_skiexpr e1) + (sizeof_skiexpr e2)
-  | _ ->
-      Printf.fprintf stderr "%% WARNING: sizeof_skiexpr called on nund CML stuff\n";
-      0
