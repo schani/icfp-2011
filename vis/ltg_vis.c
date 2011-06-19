@@ -179,7 +179,6 @@ bool	is_slot_index(slot_t *slot)
 #define	TI_APPLIED	16
 
 typedef	struct _card {
-	int id;
 	char *name;
 	unsigned flags;
 	vtim_t ti_applied;
@@ -187,24 +186,23 @@ typedef	struct _card {
 	int64_t right;
 }	card_t;
 
-card_t	cards[] = {
-	{ .id =  -1, .name = "I" },
-	{ .id =  -2, .name = "zero" },
-	{ .id =  -3, .name = "succ" },
-	{ .id =  -4, .name = "dbl" },
-	{ .id =  -5, .name = "get" },
-	{ .id =  -6, .name = "put" },
-	{ .id =  -7, .name = "S" },
-	{ .id =  -8, .name = "K" },
-	{ .id =  -9, .name = "inc" },
-	{ .id = -10, .name = "dec" },
-	{ .id = -11, .name = "attack" },
-	{ .id = -12, .name = "help" },
-	{ .id = -13, .name = "copy" },
-	{ .id = -14, .name = "revive" },
-	{ .id = -15, .name = "zombie" },
-	{ .id = -16, .name = "XXX" },
-	{ .id = 0 }};
+card_t	cards[2][16] = {{
+	{ .name = "I" },
+	{ .name = "zero" },
+	{ .name = "succ" },
+	{ .name = "dbl" },
+	{ .name = "get" },
+	{ .name = "put" },
+	{ .name = "S" },
+	{ .name = "K" },
+	{ .name = "inc" },
+	{ .name = "dec" },
+	{ .name = "attack" },
+	{ .name = "help" },
+	{ .name = "copy" },
+	{ .name = "revive" },
+	{ .name = "zombie" },
+	{ .name = "XXX" }}, { }};
 
 
 static  char *	cmd_name;
@@ -214,27 +212,11 @@ char	opt_single = 0;
 uint64_t	opt_halt = ~0;
 
 
-char *	card_name_from_id(int id)
+card_t * card_from_name(unsigned play_id, char *name)
 {
-	for (int i = 0; i < sizeof(cards)/sizeof(card_t); i++)
-		if (cards[i].id == id)
-			return cards[i].name;
-	return NULL;
-}
-
-int	card_id_from_name(char *name)
-{
-	for (int i = 0; i < sizeof(cards)/sizeof(card_t); i++)
-		if (strcmp(cards[i].name, name) == 0)
-			return cards[i].id;
-	return 0;
-}
-
-card_t * card_from_name(char *name)
-{
-	for (int i = 0; i < sizeof(cards)/sizeof(card_t); i++)
-		if (strcmp(cards[i].name, name) == 0)
-			return &cards[i];
+	for (int i = 0; i < 16; i++)
+		if (strcmp(cards[play_id][i].name, name) == 0)
+			return &cards[play_id][i];
 	return NULL;
 }
 
@@ -615,10 +597,10 @@ void	vis_draw_card(SDL_Surface *dst, unsigned x, card_t *card)
 			small_fnt, line[i], 255, 255, 255);
 }
 
-void	vis_draw_cards(SDL_Surface *dst)
+void	vis_draw_cards(SDL_Surface *dst, unsigned play_id)
 {
-	for (int i = 0; i < sizeof(cards)/sizeof(card_t); i++) {
-		vis_draw_card(dst, i, &cards[i]);
+	for (int i = 0; i < 16; i++) {
+		vis_draw_card(dst, i, &cards[play_id][i]);
 	}
 }
 
@@ -723,7 +705,7 @@ bool	parse_player_info(char *line)
 				play_id ? 'B' : 'A',
 				card_name, slot_id);
 			
-		card_t *card = card_from_name(card_name);
+		card_t *card = card_from_name(play_id, card_name);
 		if (card) {
 			card->flags |= FL_LEFT;
 			vis_timer_set(&card->ti_applied, TI_APPLIED);
@@ -740,7 +722,7 @@ bool	parse_player_info(char *line)
 				play_id ? 'B' : 'A',
 				slot_id, card_name);
 
-		card_t *card = card_from_name(card_name);
+		card_t *card = card_from_name(play_id, card_name);
 		if (card) {
 			card->flags |= FL_RIGHT;
 			vis_timer_set(&card->ti_applied, TI_APPLIED);
@@ -831,8 +813,8 @@ bool	parse_exception(char *line)
 	if (!opt_quiet)
 		printf("%s\n", line);
 	player_stat[play_id].exceptions++;
-	cards[15].flags |= FL_LEFT;
-	cards[15].ti_applied = TI_APPLIED;
+	cards[play_id][15].flags |= FL_LEFT;
+	cards[play_id][15].ti_applied = TI_APPLIED;
 	return true;
 }
 
@@ -1101,6 +1083,8 @@ int	main(int argc, char *argv[])
 		exit(7);
 	}
 
+	memcpy(cards[1], cards[0], sizeof(cards[0]));
+
 	vis_init_slots(player[0]);
 	vis_init_slots(player[1]);
 
@@ -1116,8 +1100,8 @@ int	main(int argc, char *argv[])
 	vis_draw_card_grid(card0, SLOT_WIDTH, CARD_HEIGHT);
 	vis_draw_card_grid(card1, SLOT_WIDTH, CARD_HEIGHT);
 
-	vis_draw_cards(card0);
-	vis_draw_cards(card1);
+	vis_draw_cards(card0, 0);
+	vis_draw_cards(card1, 1);
 
 	vis_draw_vitality(vita0, player_stat[0].total_vitality);
 	vis_draw_vitality(vita1, player_stat[1].total_vitality);
@@ -1154,8 +1138,8 @@ int	main(int argc, char *argv[])
 		SDL_BlitSurface(play0, &psrcRect, screen, &play0Rect);
 		SDL_BlitSurface(play1, &psrcRect, screen, &play1Rect);
 
-		vis_draw_cards(card0);
-		vis_draw_cards(card1);
+		vis_draw_cards(card0, 0);
+		vis_draw_cards(card1, 1);
 
 		SDL_Rect csrcRect = { 0, 0, PLAY_WIDTH, CARD_HEIGHT + 1 };
 		SDL_Rect card0Rect = { 10, 20 + PLAY_HEIGHT, PLAY_WIDTH, CARD_HEIGHT + 1 };
