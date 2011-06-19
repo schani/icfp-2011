@@ -142,10 +142,11 @@
 	:zero))
 
 (declare *fields*)
+(defvar *assume-inited* false)
 
 (defn- gen-primitive? [x s]
   (if-let [card (primitive-card? x)]
-    (let [put (if (= (*fields* s) :I)
+    (let [put (if (and *assume-inited* (= (*fields* s) :I))
 		[]
 		[[:left s :put]])]
       (if (= card :I)
