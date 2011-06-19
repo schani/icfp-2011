@@ -4,6 +4,8 @@ open Printer
 open Arg
 open Cards
 
+exception Bot_error of string
+
 let fold_vitality world cmp start access =
   Array.fold_right (fun e1 e2 -> cmp e1 e2) (access world) start
 
@@ -25,6 +27,14 @@ let prop_zombies world =
   List.filter (fun (x, _) -> x == -1) (Array.to_list (fst world))
 let prop_zombies world =
   List.filter (fun (x, _) -> x == -1) (Array.to_list (snd world))
+
+let rec last_alive_slotnr slots = function
+  | -1 -> raise (Bot_error "max_alive_slotnr: no slots alive")
+  | i when (fst slots.(i)) > 0 -> i
+  | i -> last_alive_slotnr slots (i - 1)
+
+let last_alive_own_slot world = last_alive_slotnr (fst world) 255
+let last_alive_other_slot world = last_alive_slotnr (snd world) 255
 
 let read_turns_from_file filename =
   let ifi = open_in filename
