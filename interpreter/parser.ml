@@ -65,5 +65,3 @@ let parse_input handle printer () =
     with
       | End_of_file ->
 	  raise (Parse_error "End_of_file where it should happen")
-      | _ ->
-	  raise (Parse_error "unknown error")
