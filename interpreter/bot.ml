@@ -87,7 +87,7 @@ let bootloop move_callback priv_data =
 	  (Some move2),world,priv_data,turn_stats
       with
 	  x ->
-	    output_string stderr ("bootloop: got exception: %s" ^ (Printexc.to_string x));
+	    output_string stderr ("botloop: got exception: %s" ^ (Printexc.to_string x));
 	    flush stderr;
 	    (Some (Right (0, I))),world,priv_data,(empty_turn_stats ()) (* never give up strategy *)
     in let m, w, pd, ts = do_work ()
