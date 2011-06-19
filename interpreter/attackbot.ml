@@ -59,7 +59,7 @@ let move_callback context world proponent_move turn_stats privdata =
 	    match deads with
 	      | [] -> state_machine stored_state privdata
 	      | x :: rest ->
-		  let job = generate_ressurect_code world x
+  		  let job = generate_ressurect_code world x
 		  in
 		    state_machine (S_APPLY_RESURRECT_TURNS (job, S_RESURRECT (rest, stored_state))) privdata
 	  end
@@ -145,7 +145,7 @@ let move_callback context world proponent_move turn_stats privdata =
 
 let _ =
   let pd = {
-    pd_state = S_APPLY_TURNS (turns_masr, S_MASR_FIND_VICTIM biggest_other_slot);
+    pd_state = S_APPLY_TURNS (turns_masr, S_MASR_FIND_VICTIM (function _ -> 0));
     during_load_slots = [0; 1; 2; 3; 8];
     post_load_slots = [4; 8; 12];
   }
