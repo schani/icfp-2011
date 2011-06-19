@@ -47,7 +47,8 @@ extern int usleep(unsigned long usec);
 
 #define	FONT_HEIGHT	10
 
-#define	BASE_VITALITY	(10000 * 256)
+#define	START_VITALITY	10000
+#define	BASE_VITALITY	(START_VITALITY * 256)
 
 
 void	str_free(char *str)
@@ -469,6 +470,20 @@ int	vis_mix(float mix, unsigned a, unsigned b)
 	return (int)val;
 }
 
+void	vis_draw_slot_vitality(SDL_Surface *dst,
+		unsigned xp, unsigned yp, uint64_t vitality)
+{
+	float val = MIN((float)vitality / START_VITALITY, 2.0);
+
+	unsigned width = val * (SLOT_WIDTH - 6) / 2;
+
+	unsigned r, g, b;
+
+	hsv2rgb(val * 90, 255, 255, &r, &g, &b);
+
+	boxRGBA(dst, xp + 3, yp + SLOT_HEIGHT - 8,
+		xp + 3 + width, yp + SLOT_HEIGHT - 6, r, g, b, 128);
+}
 
 void	vis_draw_slot(SDL_Surface *dst, unsigned x, unsigned y, slot_t *slot)
 {
@@ -531,6 +546,8 @@ void	vis_draw_slot(SDL_Surface *dst, unsigned x, unsigned y, slot_t *slot)
 	for (int i=0; i<2; i++)
 		vis_draw_string(dst, xp + 2, yp + 2 + i * FONT_HEIGHT,
 			small_fnt, line[i], 255, 255, 255);
+
+	vis_draw_slot_vitality(dst, xp, yp, slot->vitality);
 }
 
 void	vis_draw_slots(SDL_Surface *dst, slot_t slot[256])
