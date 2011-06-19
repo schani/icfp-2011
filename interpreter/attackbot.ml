@@ -9,6 +9,7 @@ open Printf
 
 type state =
   | S_APPLY_TURNS of (turn list * state)
+  | S_APPLY_ATTACK of (turn list * state)
   | S_MASR_FIND_VICTIM of (default_world_type -> int)
   | S_MASR_LAUNCH_ATTACK of int
   | S_MASR_FIND_NEXT_VICTIM of int
@@ -84,6 +85,20 @@ let move_callback context world proponent_move turn_stats privdata =
 		  | turn :: rest -> turn, S_APPLY_TURNS (rest, stored_state), privdata
 		  | [] -> state_machine stored_state privdata
 	  end
+	| S_APPLY_ATTACK (turns, stored_state) -> begin
+	    botdebug (sprintf "move_callback: S_APPLY_ATTACK: %i left\n" (List.length turns));
+	    let deads = find_dead_slots (fst world) privdata.post_load_slots
+	    in
+	      if (List.length deads) > 0 then
+		(* oh no, we have been interrupted *)
+		state_machine (S_RESURRECT (deads, S_APPLY_TURNS (turns_masr, S_MASR_FIND_VICTIM biggest_other_slot)))
+		  privdata
+	      else
+		match turns with
+		  | turn :: [] -> turn, stored_state, privdata
+		  | turn :: rest -> turn, S_APPLY_ATTACK (rest, stored_state), privdata
+		  | [] -> state_machine stored_state privdata
+	  end
 	| S_MASR_FIND_VICTIM selector ->
 	    (* botdebug ("VORM DEPPATEN SCHASS\n");*)
 	    let victim = selector world
@@ -97,7 +112,7 @@ let move_callback context world proponent_move turn_stats privdata =
 	    let deads = find_dead_slots (fst world) privdata.post_load_slots
 	    in
 	      if (List.length deads) > 0 then
-		state_machine (S_RESURRECT (deads, S_APPLY_TURNS (turns_masr, S_MASR_FIND_VICTIM biggest_other_slot)))
+		state_machine (S_RESURRECT (deads, S_APPLY_ATTACK (turns_masr, S_MASR_FIND_VICTIM biggest_other_slot)))
 		  privdata
 	      else begin
 		(
@@ -133,7 +148,7 @@ let move_callback context world proponent_move turn_stats privdata =
 		      let new_vic_fun = Left (Succ, 4)
 		      in let new_vic_funs = (Array.to_list (Array.make (old_victim - next_victim) new_vic_fun))
 		      in
-			state_machine (S_APPLY_TURNS (new_vic_funs, S_MASR_LAUNCH_ATTACK next_victim)) privdata
+			state_machine (S_APPLY_ATTACK (new_vic_funs, S_MASR_LAUNCH_ATTACK next_victim)) privdata
 	      end
     in let move, next_state, privdata = state_machine privdata.pd_state privdata
     in
@@ -145,7 +160,8 @@ let move_callback context world proponent_move turn_stats privdata =
 
 let _ =
   let pd = {
-    pd_state = S_APPLY_TURNS (turns_masr, S_MASR_FIND_VICTIM (function _ -> 0));
+    pd_state = S_APPLY_TURNS (turns_masr, S_MASR_FIND_VICTIM biggest_other_slot);
+				(* (function _ -> 0)); *)
     during_load_slots = [0; 1; 2; 3; 8];
     post_load_slots = [4; 8; 12];
   }
