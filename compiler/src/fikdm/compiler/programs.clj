@@ -212,6 +212,11 @@
 		(binding [*assume-inited* true]
 		  (ski->commands (make-masr 4 4) 8)))
 
+(doseq [s (range 9 256)]
+  (let [commands (ski->commands `(((:help ~s) 4) 8000) 12)]
+    (command-script (str "/tmp/help-" s "-to-4.cmd") commands)
+    (shell-script (str "/tmp/help-" s "-to-4.sh") commands)))
+
 (masr-shell-script "/tmp/masr-8-4.sh" 4 8)
 
 ;;(spit-echoer "/tmp/beidler.sh" (make-help-attack-loop 0 8192 0 768))
