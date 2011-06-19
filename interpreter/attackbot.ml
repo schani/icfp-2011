@@ -14,7 +14,8 @@ type state =
   | S_MASR_FIND_NEXT_VICTIM of int
 
 type privdata = {
-  pd_state: state
+  pd_state: state;
+  pd_code: (string * turn list) list;
 }
 
 let botdebug str =
@@ -63,7 +64,7 @@ let move_callback context world proponent_move turn_stats privdata =
 		  state_machine (S_APPLY_TURNS (new_vic_funs, S_MASR_LAUNCH_ATTACK next_victim))
     in let move, next_state = state_machine privdata.pd_state
     in
-	move, { pd_state = next_state }
+	move, { privdata with pd_state = next_state }
   with
       Bot_error str ->
 	botdebug ("move_callback: Bot_error: %s\n" ^ str);
@@ -71,6 +72,12 @@ let move_callback context world proponent_move turn_stats privdata =
 
 let _ =
   let turns = read_turns_from_file "functions/masr.cmd"
-  in let pd = { pd_state = S_APPLY_TURNS (turns, S_FIND_VICTIM 255) }
+  in let pd = {
+      pd_state = S_APPLY_TURNS (turns, S_FIND_VICTIM 255);
+      pd_code = [
+	"masr", read_turns_from_file "functions/masr.cmd";
+	"masr4", read_turns_from_file "functions/masr4.cmd"
+      ];
+    }
   in
     bootloop move_callback pd
