@@ -532,7 +532,12 @@ void	vis_draw_slot(SDL_Surface *dst, unsigned x, unsigned y, slot_t *slot)
 	char line[3][64] =  { "", "" };
 
 	if (slot->seq) {
-		sprintf(line[0], "%7.7s", slot->seq);
+		int ssl = strlen(slot->seq);
+		
+		if (ssl <= 7)
+			sprintf(line[0], "%7.7s", slot->seq);
+		else
+			sprintf(line[0], "{%d}", ssl);
 	} else {
 		sprintf(line[0], "%6ld", slot->field);
 	}
@@ -540,7 +545,7 @@ void	vis_draw_slot(SDL_Surface *dst, unsigned x, unsigned y, slot_t *slot)
 	sprintf(line[1], "%5ld", slot->vitality);
 
 	for (int i=0; i<2; i++)
-		vis_draw_string(dst, xp + 2, yp + 2 + i * FONT_HEIGHT,
+		vis_draw_string_center(dst, xp + SLOT_WIDTH / 2, yp + 2 + i * FONT_HEIGHT,
 			small_fnt, line[i], 255, 255, 255);
 
 	vis_draw_slot_vitality(dst, xp, yp, slot->vitality);
@@ -593,7 +598,7 @@ void	vis_draw_card(SDL_Surface *dst, unsigned x, card_t *card)
 	sprintf(line[2], "%6ld", card->right);
 
 	for (int i=0; i<3; i++)
-		vis_draw_string(dst, xp + 2, yp + 2 + i * FONT_HEIGHT,
+		vis_draw_string_center(dst, xp + SLOT_WIDTH / 2, yp + 2 + i * FONT_HEIGHT,
 			small_fnt, line[i], 255, 255, 255);
 }
 
