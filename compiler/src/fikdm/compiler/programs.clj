@@ -47,6 +47,9 @@
 	   ~(make-se-combine-fn side-effect-fn
 				(make-se-fn (list f f)))))))
 
+(defn make-get-fn [slot]
+  (make-se-fn `(:get ~slot)))
+
 (defn make-help-attack-fn [help-field help-strength attack-field attack-strength]
   (let [attack-fn (make-se-fn `(((:attack ~help-field) ~attack-field) ~attack-strength))
 	help-fn (make-se-fn `(((:help ~help-field) ~help-field) ~help-strength))]
@@ -67,8 +70,16 @@
 ;; takes the attack field as an argument
 (defn make-param-help-attack-fn [help-field help-strength attack-strength]
   (let [attack-field (gensym 'attack-field)]
-    (make-se-combine-fn (make-se-fn `(((:help ~help-field) ~help-field) ~help-strength))
-			(make-param-attack-fn help-field attack-strength))))
+    `(:fn [~attack-field]
+	  ~(make-help-attack-fn help-field help-strength attack-field attack-strength))))
+
+(defvar *doubler*
+  (let [sep (gensym 'sep)
+	i (gensym 'i)]
+    `(:fn [~sep]
+	  (:fn [~i]
+	       ~(make-se-combine-fn `(~sep (:dbl ~i))
+				    `(~sep (:succ (:dbl ~i))))))))
 
 (defn make-get-apply-fn [param-side-effect-fn slot]
   (make-se-pass-fn (make-se-fn `(:get ~slot))
@@ -101,10 +112,26 @@
 	      (concat
 	       (generate (lambda->ski
 			  ;;(make-get-apply-fn (make-param-help-attack-fn 0 8192 768) 64)
+
 			  (make-apply-self-return
-			   (list (make-repeat-effect-fn 16)
-				 (make-help-get-attack-fn 0 8192 64 768)))
-			 )
+			    (let [d (gensym 'd)]
+			         `(:fn [~d]
+				       (
+					(~(make-repeat-effect-fn 16)
+					 ((~*doubler*
+					   (~*doubler*
+					    ~(make-param-help-attack-fn 0 8192 768)))
+					  (~(make-get-fn 64) ~d)))
+
+					~d))))
+
+			  ;;(list (make-repeat-effect-fn 16)
+			;;	(make-se-pass-fn (make-get-fn 64)
+			;;			 (make-param-help-attack-fn 0 8192 768)))
+
+
+			  )
+
 			 65 *regs*)
 	       ;;[[:left -1 :init-255]]
 	       ;;(generate 255 64 nil)
@@ -113,7 +140,7 @@
 	       ;;[[:left -1 :init-0]]
 	       (generate 0 64 nil)
 	       ;;[[:right 65 :I]]
-	       (apply concat (repeat 256
+	       (apply concat (repeat 64
 	       [;;[:left -1 :death-loop]
 		[:right 65 :I]
 		;;[:right 65 :I]
