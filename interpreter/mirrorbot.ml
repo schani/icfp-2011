@@ -4,7 +4,7 @@ open Inter
 open Parser
 open Printer
 
-let move_callback context world proponent_move privdata =
+let move_callback context world proponent_move turn_stats privdata =
   match proponent_move with
     | None -> Left (I, 0), ()
     | Some move -> move, ()

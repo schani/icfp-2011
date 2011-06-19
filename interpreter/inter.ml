@@ -35,7 +35,7 @@ type 'world intercontext = {life: liveness;
 			    count_alive_own: 'world -> (int * 'world);
 			    count_alive_other: 'world -> (int * 'world);
 			    error: string -> 'world -> unit;
-			    end_move: 'world -> 'world;
+			    end_move: 'world -> turn_stats -> ('world * turn_stats);
 			   } 
 
 let rec plus l x y = 
@@ -311,14 +311,14 @@ let default_context =
     count_alive_own = (count_alive own);
     count_alive_other = (count_alive other);
     error = (fun msg w -> raise (InterError(msg,w)));
-    end_move = (function p1,p2 -> p2,p1);
+    end_move = (fun (p1,p2) (q1,q2) -> (p2,p1),(q2,q1));
     }
   
 let movegetslot = function 
   | Left(_,slot) -> slot 
   | Right(slot,_) -> slot 
     
-let apply_move move world context debug = 
+let apply_move move world context turn_stats debug = 
   let slot = movegetslot move in 
   let vit,world = context.read_own_vit slot world in
   try 
@@ -327,14 +327,16 @@ let apply_move move world context debug =
       let expr = match move with 
 	| Left(card,_) -> Lambda(Card(card),field)
 	| Right(_,card) -> Lambda(field,Card(card))
+      in let field,world = inter {context with life = Alive; depth = 0} world expr
       in
-      let field,world = inter {context with life = Alive; depth = 0} world expr in
-      context.write_own_field slot field world 
+	context.write_own_field slot field world, turn_stats
     else
-      (context.error "apply: not alive" world; (* assert false; *) world)
+      (context.error "apply: not alive" world; (* assert false; *) world), turn_stats
   with InterError(msg,w) -> 
     debug (MsgReset slot);
-    context.write_own_field slot (Card I) world
+    context.write_own_field slot (Card I) world, (
+      { (fst turn_stats) with reset_slots = slot :: (fst turn_stats).reset_slots }, (snd turn_stats) 
+    )
 
 let apply_zombies world context = 
   let rec loop i world = 
@@ -356,12 +358,12 @@ let apply_zombies world context =
       loop (i+1) world
   in loop 0 world
       
-let apply_player context world move debug = 
+let apply_player context world turn_stats move debug =
   let world = apply_zombies world context in
-  let world = apply_move move world context debug in 
+  let world, turn_stats = apply_move move world context turn_stats debug in 
   let count,world = context.count_alive_own world in
-  let world = context.end_move world in
-  count,world,move
+  let world, turn_stats = context.end_move world turn_stats in
+    count,world,move, turn_stats
 
 let play_game context world player0_input player0_output_callback player1_input player1_output_callback printer startturn = 
   let winner world = 
@@ -386,7 +388,7 @@ let play_game context world player0_input player0_output_callback player1_input 
        printer (MsgWorld world);
        let move = player0_input () in
        printer (MsgMove (0, move));
-       let count,world,move = apply_player context world move printer in
+       let count,world,move,_ = apply_player context world (empty_turn_stats ()) move printer in
        player1_output_callback move;
        if count = 0 then
 	 1,world
@@ -395,7 +397,7 @@ let play_game context world player0_input player0_output_callback player1_input 
 	  printer (MsgWorld world);
 	  let move = player1_input () in
 	  printer (MsgMove (1, move));
-	  let count,world,move = apply_player context world move printer in
+	  let count,world,move,_ = apply_player context world (empty_turn_stats ()) move printer in
 	  player0_output_callback move;
 	  if count = 0 then 
 	    0,world

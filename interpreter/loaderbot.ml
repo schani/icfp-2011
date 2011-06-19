@@ -10,7 +10,7 @@ type privdata = {
   pd_stage : int
 }
 
-let move_callback context world proponent_move privdata =
+let move_callback context world proponent_move turn_stats privdata =
   let move, rest, stage =
     match privdata.pd_stage with
       | 0 (* kill enemy field 0, not yet implemented *)

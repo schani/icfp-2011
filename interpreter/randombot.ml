@@ -12,7 +12,7 @@ let random_card () =
 and random_slot () =
   Random.int 256
 
-let move_callback context world proponent_move privdata =
+let move_callback context world proponent_move turn_stats privdata =
   match Random.bool () with
     | true ->  Left (random_card (), random_slot ()), ()
     | false -> Right (random_slot (), random_card()), ()

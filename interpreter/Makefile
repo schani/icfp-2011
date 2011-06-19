@@ -1,5 +1,5 @@
 DISTNAME = inter
-BINFILES = tester mirrorbot randombot loaderbot
+BINFILES = tester mirrorbot randombot loaderbot attackbot
 SBINFILES =
 LIBFILES =
 DOCFILES = COPYING LICENSE CHANGELOG VERSION 

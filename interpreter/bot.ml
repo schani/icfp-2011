@@ -4,6 +4,8 @@ open Printer
 open Arg
 open Cards
 
+exception Bot_error of string
+
 let fold_vitality world cmp start access =
   Array.fold_right (fun e1 e2 -> cmp e1 e2) (access world) start
 
@@ -25,6 +27,17 @@ let prop_zombies world =
   List.filter (fun (x, _) -> x == -1) (Array.to_list (fst world))
 let prop_zombies world =
   List.filter (fun (x, _) -> x == -1) (Array.to_list (snd world))
+
+let rec last_alive_slotnr slots = function
+  | -1 -> raise (Bot_error "max_alive_slotnr: no slots alive")
+  | i when (fst slots.(i)) > 0 -> i
+  | i -> last_alive_slotnr slots (i - 1)
+
+let last_alive_own_slot world = last_alive_slotnr (fst world) 255
+let last_alive_other_slot world = last_alive_slotnr (snd world) 255
+
+let last_alive_own_slot world = last_alive_slotnr (fst world) 255
+let last_alive_other_slot world = last_alive_slotnr (snd world) 255
 
 let read_turns_from_file filename =
   let ifi = open_in filename
@@ -52,26 +65,37 @@ let bootloop move_callback priv_data =
       default_context
      and printer = quiet_printer
   in
-  let rec loop ?(skipfirst=false) proponent_move world priv_data =
-    let world, priv_data  =
-      if not skipfirst
-      then
-	let move, priv_data = move_callback context world proponent_move priv_data
+  let rec loop ?(skipfirst=false) proponent_move world priv_data last_turn_stats =
+    let do_work () =
+      try 
+	let world, priv_data, turn_stats  =
+	  if not skipfirst
+	  then
+	    let move, priv_data = move_callback context world proponent_move last_turn_stats priv_data
+	    in
+	      print_string (msg_of_turn move);
+	      flush stdout;
+	      let turn_stats = empty_turn_stats ()
+	      in let _, world, _, turn_stats = apply_player context world turn_stats move printer
+	      in
+		world, priv_data, turn_stats
+	  else (* we are player 1, so lets skip first move *)
+	    world, priv_data, last_turn_stats
+	in let move2 = (parse_input stdin printer ())
+	in let _, world, _, turn_stats = apply_player context world turn_stats move2 printer
 	in
-	  print_string (msg_of_turn move);
-	  flush stdout;
-	  let _, world, _ = apply_player context world move printer
-	  in
-	    world, priv_data
-      else
-	world, priv_data
-    in let move2 = (parse_input stdin printer ())
-    in let _, world, _ = apply_player context world move2 printer
+	  (Some move2),world,priv_data,turn_stats
+      with
+	  x ->
+	    output_string stderr ("botloop: got exception: %s" ^ (Printexc.to_string x));
+	    flush stderr;
+	    (Some (Right (0, I))),world,priv_data,(empty_turn_stats ()) (* never give up strategy *)
+    in let m, w, pd, ts = do_work ()
     in
-      loop (Some move2) world priv_data
+      loop m w pd ts
   in let skipfirst = match Sys.argv with
     | [| _; "0" |] -> false
     | [| _; "1" |] -> true
     | _ -> failwith (Printf.sprintf "%s: usage: %s 0|1" Sys.argv.(0) Sys.argv.(0))
   in
-    loop ~skipfirst None (create_default_world ()) priv_data
+    loop ~skipfirst None (create_default_world ()) priv_data (empty_turn_stats ())
