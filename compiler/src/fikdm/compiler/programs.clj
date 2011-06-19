@@ -27,6 +27,12 @@
   `(:fn [d#]
 	(~e (~g d#))))
 
+(defvar *se-twice*
+  (let [f (gensym 'f)]
+    (compile-lambda
+     `(:fn [~f]
+	   ~(make-se-combine-fn f f)))))
+
 (defn make-loop [side-effect]
   `(((:S :I) :I)
     (:fn [f#]
@@ -59,16 +65,12 @@
 				       (make-param-attack-fn help-field attack-strength))))
 
 (defn make-repeat-effect-fn [n side-effect-fn]
-  (assert (>= n 2))
-  (let [se-fn (gensym 'se-fn)]
-    `((:fn [~se-fn]
-	   ~(loop [n (dec n)
-		   acc se-fn]
-	      (if (zero? n)
-		acc
-		(recur (dec n)
-		       (make-se-combine-fn se-fn acc)))))
-      ~side-effect-fn)))
+  (assert (>= n 1))
+  (if (= n 1)
+    side-effect-fn
+    (do
+      (assert (zero? (rem n 2)))
+      (list *se-twice* (make-repeat-effect-fn (quot n 2) side-effect-fn)))))
 
 (defn lambda->ski [program]
   (fixpoint optimize-ski 10 (compile-lambda program)))
