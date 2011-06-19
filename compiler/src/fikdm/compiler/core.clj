@@ -98,6 +98,23 @@
        ski))
     ski))
 
+(defn fixpoint [f max x]
+  (loop [x x
+	 i 0]
+    (if (>= i max)
+      (do
+	(info "Max iterations")
+	x)
+      (let [nx (f x)]
+	(if (= nx x)
+	  (do
+	    (info (str i " iterations"))
+	    x)
+	  (recur nx (inc i)))))))
+
+(defn lambda->ski [program]
+  (fixpoint optimize-ski 10 (compile-lambda program)))
+
 (defn- expand-if-lets [bindings consequent alternative]
   (if (empty? bindings)
     consequent
