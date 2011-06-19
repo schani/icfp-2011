@@ -27,11 +27,12 @@
   `(:fn [d#]
 	(~e (~g d#))))
 
-(defvar *se-twice*
-  (let [f (gensym 'f)]
-    (compile-lambda
-     `(:fn [~f]
-	   ~(make-se-combine-fn f f)))))
+(defvar *se-twice* '((:S :S) :I))
+;; equivalent to, but shorter than:
+;;  (let [f (gensym 'f)]
+;;    (compile-lambda
+;;     `(:fn [~f]
+;;	   ~(make-se-combine-fn f f)))))
 
 (defn make-loop [side-effect]
   `(((:S :I) :I)
