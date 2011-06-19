@@ -92,6 +92,9 @@
        (if-match [[?K ?I] ski]
 		 (if (= [K I] [:K :I])
 		   :put))
+       (if-match [[?S1 [[?S2 [?K ?x]] ?I]] ski]
+		 (if (= [S1 S2 K I] [:S :S :K :I])
+		   `(:S ~x)))
        ski))
     ski))
 
