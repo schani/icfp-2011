@@ -58,17 +58,3 @@
     (do
       (assert (not (*composites* ski)))
       ski)))
-
-(defn fixpoint [f max x]
-  (loop [x x
-	 i 0]
-    (if (>= i max)
-      (do
-	(info "Max iterations")
-	x)
-      (let [nx (f x)]
-	(if (= nx x)
-	  (do
-	    (info (str i " iterations"))
-	    x)
-	  (recur nx (inc i)))))))

@@ -1,8 +1,7 @@
 (ns fikdm.compiler.programs
   (:use clojure.contrib.def
 	clojure.set
-	fikdm.compiler.core
-	fikdm.compiler.eval))
+	fikdm.compiler.core))
 
 (defvar *SII* (compile-lambda '(:fn [x] (x x))))
 
@@ -27,6 +26,13 @@
   `(:fn [d#]
 	(~e (~g d#))))
 
+(defvar *se-twice* '((:S :S) :I))
+;; equivalent to, but shorter than:
+;;  (let [f (gensym 'f)]
+;;    (compile-lambda
+;;     `(:fn [~f]
+;;	   ~(make-se-combine-fn f f)))))
+
 (defn make-loop [side-effect]
   `(((:S :I) :I)
     (:fn [f#]
@@ -39,8 +45,7 @@
     `(~*SII*
       (:fn [~f]
 	   ~(make-se-combine-fn side-effect-fn
-				`(:fn [d2#]
-				      (~f ~f)))))))
+				(make-se-fn (list f f)))))))
 
 (defn make-help-attack-fn [help-field help-strength attack-field attack-strength]
   (let [attack-fn (make-se-fn `(((:attack ~help-field) ~attack-field) ~attack-strength))
@@ -60,19 +65,12 @@
 				       (make-param-attack-fn help-field attack-strength))))
 
 (defn make-repeat-effect-fn [n side-effect-fn]
-  (assert (>= n 2))
-  (let [se-fn (gensym 'se-fn)]
-    `((:fn [~se-fn]
-	   ~(loop [n (dec n)
-		   acc se-fn]
-	      (if (zero? n)
-		acc
-		(recur (dec n)
-		       (make-se-combine-fn se-fn acc)))))
-      ~side-effect-fn)))
-
-(defn lambda->ski [program]
-  (fixpoint optimize-ski 10 (compile-lambda program)))
+  (assert (>= n 1))
+  (if (= n 1)
+    side-effect-fn
+    (do
+      (assert (zero? (rem n 2)))
+      (list *se-twice* (make-repeat-effect-fn (quot n 2) side-effect-fn)))))
 
 (defvar *regs* #{1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27})
 
