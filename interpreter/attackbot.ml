@@ -13,6 +13,7 @@ type state =
   | S_MASR_LAUNCH_ATTACK of int
   | S_MASR_FIND_NEXT_VICTIM of int
   | S_RESURRECT of (int list * state)
+  | S_APPLY_RESURRECT_TURNS of (turn list * state)
 
 type privdata = {
   pd_state: state;
@@ -20,7 +21,7 @@ type privdata = {
   post_load_slots: int list;
 }
     
-let calculate_64_er_slot_value slot_to_attack =
+let calculate_4_er_slot_value slot_to_attack =
   255 - slot_to_attack
 
 let rec find_dead_slots ?(result=[]) slots = function
@@ -41,7 +42,7 @@ let botdebug str =
   output_string stderr ("% " ^ str);
   flush stderr
 
-let turns_masr = read_turns_from_file "functions/masr-65-64-init.cmd"
+let turns_masr = read_turns_from_file "functions/masr-8-4-noinit.cmd"
 let turns_masr4 = read_turns_from_file "functions/masr4.cmd"
 
 let move_callback context world proponent_move turn_stats privdata =
@@ -49,12 +50,20 @@ let move_callback context world proponent_move turn_stats privdata =
     let rec state_machine state privdata =
       match state with
 	| S_RESURRECT (deads, stored_state) -> begin
+	    botdebug (sprintf "move_callback: S_RESURRECT\n");
 	    match deads with
 	      | [] -> state_machine stored_state privdata
 	      | x :: rest ->
 		  let job = generate_ressurect_code world x
 		  in
-		    state_machine (S_APPLY_TURNS (job, S_RESURRECT (rest, stored_state))) privdata
+		    state_machine (S_APPLY_RESURRECT_TURNS (job, S_RESURRECT (rest, stored_state))) privdata
+	  end
+	| S_APPLY_RESURRECT_TURNS (turns, stored_state) -> begin
+	    botdebug (sprintf "move_callback: S_APPLY_RESURRECT_TURNS: %i left\n" (List.length turns));
+	    match turns with
+	      | turn :: [] -> turn, stored_state, privdata
+	      | turn :: rest -> turn, S_APPLY_RESURRECT_TURNS (rest, stored_state), privdata
+	      | [] -> state_machine stored_state privdata
 	  end
 	| S_APPLY_TURNS (turns, stored_state) -> begin
 	    botdebug (sprintf "move_callback: S_APPLY_TURNS: %i left\n" (List.length turns));
@@ -75,7 +84,7 @@ let move_callback context world proponent_move turn_stats privdata =
 	    let victim = selector world
 	    in
 	      botdebug (sprintf "move_callback: S_MASR_FIND_VICTIM: %i\n" victim);
-	      let job = write_number_to_slot (calculate_64_er_slot_value victim) 64
+	      let job = write_number_to_slot (calculate_4_er_slot_value victim) 4
 	      in
 		state_machine (S_APPLY_TURNS (job, (S_MASR_LAUNCH_ATTACK victim))) privdata
 	| S_MASR_LAUNCH_ATTACK victim ->
@@ -89,7 +98,7 @@ let move_callback context world proponent_move turn_stats privdata =
 	    let vicvit, _ = context.read_other_vit victim world
 	    in
 	      if vicvit > 0 then
-		Right (65, I), S_MASR_LAUNCH_ATTACK victim, privdata
+		Right (8, I), S_MASR_LAUNCH_ATTACK victim, privdata
 	      else
 		state_machine (S_MASR_FIND_NEXT_VICTIM victim) privdata
 	| S_MASR_FIND_NEXT_VICTIM old_victim ->
@@ -98,12 +107,12 @@ let move_callback context world proponent_move turn_stats privdata =
 	      state_machine (S_MASR_FIND_VICTIM (function _ -> 255)) privdata
 	    else
 	      let next_victim = old_victim - 1
-	      in let possible_job = write_number_to_slot (calculate_64_er_slot_value next_victim) 64
+	      in let possible_job = write_number_to_slot (calculate_4_er_slot_value next_victim) 4
 	      in
 		if (List.length possible_job) < (old_victim - next_victim) then (* create new number *)
 		  state_machine (S_MASR_FIND_VICTIM (function _ -> next_victim)) privdata
 		else
-		  let new_vic_fun = Left (Succ, 64)
+		  let new_vic_fun = Left (Succ, 4)
 		  in let new_vic_funs = (Array.to_list (Array.make (old_victim - next_victim) new_vic_fun))
 		  in
 		    state_machine (S_APPLY_TURNS (new_vic_funs, S_MASR_LAUNCH_ATTACK next_victim)) privdata
@@ -118,8 +127,8 @@ let move_callback context world proponent_move turn_stats privdata =
 let _ =
   let pd = {
     pd_state = S_APPLY_TURNS (turns_masr, S_MASR_FIND_VICTIM biggest_other_slot);
-    during_load_slots = [0; 1; 2; 3; 64; 65];
-    post_load_slots = [64; 65];
+    during_load_slots = [0; 1; 2; 3; 8];
+    post_load_slots = [4; 8];
   }
   in
     bootloop move_callback pd
