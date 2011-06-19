@@ -132,8 +132,6 @@
 (defvar *kill-255* (lambda->ski
 		    (make-loop (make-help-attack-fn 0 8192 255 768))))
 
-(defvar *regs* #{1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27})
-
 (defn spit-echoer [filename program]
   (shell-script filename
 		(generate
@@ -142,16 +140,15 @@
 
 (shell-script "/tmp/beidler.sh"
 	      (concat
-	       (generate *masr4*
-			 65 *regs*)
+	       (ski->commands *masr* 65)
 	       ;;[[:left -1 :init-255]]
 	       ;;(generate 255 64 nil)
 	       ;;[[:left -1 :kill-255]]
 	       ;;(repeat 16 [:right 65 :I])
 	       ;;[[:left -1 :init-0]]
-	       (generate 0 64 nil)
+	       (ski->commands 0 64)
 	       ;;[[:right 65 :I]]
-	       (apply concat (repeat 64
+	       (apply concat (repeat 256
 	       [;;[:left -1 :death-loop]
 		[:right 65 :I]
 		;;[:right 65 :I]
@@ -159,13 +156,13 @@
 		]))))
 
 (command-script "/tmp/masr.cmd"
-		(generate *masr* 65 *regs*))
+		(ski->commands *masr* 65))
 (command-script "/tmp/masr4.cmd"
-		(generate *masr4* 65 *regs*))
+		(ski->commands *masr4* 65))
 (command-script "/tmp/kill255.cmd"
-		(generate *kill-255* 65 *regs*))
+		(ski->commands *kill-255* 65))
 (command-script "/tmp/revive32.cmd"
-		(generate (lambda->ski (make-apply-self-return (make-get-revive-fn 32))) 33 *regs*))
+		(ski->commands (lambda->ski (make-apply-self-return (make-get-revive-fn 32))) 33))
 
 ;;(spit-echoer "/tmp/beidler.sh" (make-help-attack-loop 0 8192 0 768))
 ;;(spit-echoer "/tmp/beidler.sh" (make-dec-loop 0))

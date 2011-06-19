@@ -1,1 +1,2 @@
 kill255.cmd	attacks port 0 of enemy, engages automatically
+masr-65-64-init		load into slot 65, attack slot given in slot 64.  slots it touches the first time must be I.

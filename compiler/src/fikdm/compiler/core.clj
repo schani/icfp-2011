@@ -139,12 +139,18 @@
 	(= x 0)
 	:zero))
 
+(declare *fields*)
+
 (defn- gen-primitive? [x s]
   (if-let [card (primitive-card? x)]
-    (if (= card :I)
-      [[:left s :put]]
-      [[:left s :put]
-       [:right s card]])))
+    (let [put (if (= (*fields* s) :I)
+		[]
+		[[:left s :put]])]
+      (if (= card :I)
+	put
+	(concat
+	 put
+	 [[:right s card]])))))
 
 (defn- gen-number [x s]
   (assert (and (number? x) (>= x 0)))
@@ -187,8 +193,20 @@
 
 (declare generate)
 
+(defn- get-from-field? [ski]
+  (some (fn [[s f]]
+	  (if (= f ski)
+	    s
+	    false))
+	*fields*))
+
+(defn- set-field! [s ski]
+  ;;(info (str "field " s " <- " ski))
+  (set! *fields* (assoc *fields* s ski)))
+
 (defn- generate-complex [s free x-code y]
   (assert (not (contains? free s)))
+  ;;(info (str "generating complex for " y))
   (let [[os os-free] (alloc-slot free)]
     (generate-mn s x-code
 		 (concat (generate y os os-free)
@@ -196,26 +214,38 @@
 			 [[:left 0 :get]])
 		 :get :zero)))
 
-(defn generate [ski s free]
+(defn- generate [ski s free]
   (assert (not (contains? free s)))
-  (if-let [simple (gen-simple? ski s)]
-    simple
-    (cond-match ski
+  (if-let [slot (get-from-field? ski)]
+    (info (str "already in " slot ": " ski)))
+  (let [gen (if-let [simple (gen-simple? ski s)]
+	      simple
+	      (cond-match ski
 
-		[?x [?M ?N]]
-		(let [x-code (generate x s free)]
-		  (if-lets [m-card (primitive-card? M)
-			    n-card (primitive-card? N)]
-			   (generate-mn s x-code [] m-card n-card)
-			   (if-let [y-simple (gen-simple? [M N] 0)]
-			     (generate-mn s x-code y-simple :get :zero)
-			     (generate-complex s free x-code [M N]))))
+			  [?x [?M ?N]]
+			  (let [x-code (generate x s free)]
+			    (if-lets [m-card (primitive-card? M)
+				      n-card (primitive-card? N)]
+				     (generate-mn s x-code [] m-card n-card)
+				     (if-let [y-simple (gen-simple? [M N] 0)]
+				       (do
+					 (set-field! 0 [M N])
+					 (generate-mn s x-code y-simple :get :zero))
+				       (generate-complex s free x-code [M N]))))
 
-		[?x ?y]
-		(generate-complex s free (generate x s free) y)
+			  [?x ?y]
+			  (generate-complex s free (generate x s free) y)
 
-		?x
-		(throw (Exception. (str "Malformed SKI " x))))))
+			  ?x
+			  (throw (Exception. (str "Malformed SKI " x)))))]
+    (set-field! s ski)
+    gen))
+
+(defvar *regs* #{1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27})
+
+(defn ski->commands [ski s]
+  (binding [*fields* (into {} (map (fn [r] [r :I]) *regs*))]
+    (generate ski s *regs*)))
 
 (defn- command-str [prefix command]
   (let [[side slot card] command]
