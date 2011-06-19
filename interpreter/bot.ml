@@ -33,7 +33,7 @@ let bootloop move_callback priv_data =
     in let move2 = (parse_input stdin printer ())
     in let _, world, _ = apply_player context world move2 printer
     in
-      loop proponent_move world priv_data
+      loop (Some move2) world priv_data
   in let skipfirst = match Sys.argv with
     | [| _; "0" |] -> false
     | [| _; "1" |] -> true
