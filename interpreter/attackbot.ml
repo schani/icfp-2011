@@ -15,19 +15,21 @@ type state =
   | S_MASR_FIND_NEXT_VICTIM of int
   | S_RESURRECT of (int list * state)
   | S_APPLY_RESURRECT_TURNS of (turn list * state)
+  | S_HEAL_4 of state
 
 type privdata = {
   pd_state: state;
   during_load_slots: int list;
   post_load_slots: int list;
 }
+
 let strjoin l = List.fold_right (fun a b -> (a ^ "; " ^ b)) (List.map string_of_int l) ""
 let botdebug str =
   output_string stderr ("% " ^ str);
   flush stderr
 
 let calculate_4_er_slot_value slot_to_attack =
-  255 - slot_to_attack
+  (255 - slot_to_attack)
 
 let rec find_dead_slots ?(result=[]) slots = function
   | [] ->
@@ -42,14 +44,24 @@ let rec find_dead_slots ?(result=[]) slots = function
       else
 	find_dead_slots ~result slots rest
 
+let is_slot4_ok context world =
+  ((fst (context.read_own_vit 4 world)) > 8192)
+
 let generate_ressurect_code world deadnr =
   let alive_slot = last_alive_slotnr (fst world) 255
   in let numgen = write_number_to_slot deadnr alive_slot
   in
     List.append numgen [(Left (Revive, alive_slot))]
 
+let rec genhelpnums ?(res=[]) = function
+  | 256 -> List.rev res
+  | i -> genhelpnums ~res:(i :: res) (i + 1)
+      
 let turns_masr = read_turns_from_file "functions/masr-8-4-noinit.cmd"
 let turns_masr4 = read_turns_from_file "functions/masr4.cmd"
+let turns_helper4 =
+  Array.of_list (List.map (fun i -> read_turns_from_file (sprintf "functions/help-x-to-4/help-%i-to-4.cmd" i))
+		     (genhelpnums 13))
 
 let move_callback context world proponent_move turn_stats privdata =
   try
@@ -150,6 +162,14 @@ let move_callback context world proponent_move turn_stats privdata =
 		      in
 			state_machine (S_APPLY_ATTACK (new_vic_funs, S_MASR_LAUNCH_ATTACK next_victim)) privdata
 	      end
+	| S_HEAL_4 stored_state ->
+	    if is_slot4_ok context world then
+	      state_machine stored_state privdata
+	    else begin
+	      match find_healing_slot world with
+		| None -> state_machine stored_state privdata
+		| Some i -> state_machine (S_APPLY_TURNS (turns_helper4.(i), stored_state)) privdata
+	    end
     in let move, next_state, privdata = state_machine privdata.pd_state privdata
     in
       move, { privdata with pd_state = next_state }
@@ -162,7 +182,7 @@ let _ =
   let pd = {
     pd_state = S_APPLY_TURNS (turns_masr, S_MASR_FIND_VICTIM biggest_other_slot);
 				(* (function _ -> 0)); *)
-    during_load_slots = [0; 1; 2; 3; 8];
+    during_load_slots = [0; 1; 2; 3; 8; 12];
     post_load_slots = [4; 8; 12];
   }
   in
