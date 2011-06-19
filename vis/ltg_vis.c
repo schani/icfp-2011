@@ -1189,6 +1189,39 @@ int	main(int argc, char *argv[])
 				case SDLK_SPACE:
 					opt_halt++;
 					break;
+				case SDLK_ESCAPE:
+					exit(0);
+					break;
+				case SDLK_1:
+					opt_halt += 2;
+					break;
+				case SDLK_2:
+					opt_halt += 4;
+					break;
+				case SDLK_3:
+					opt_halt += 8;
+					break;
+				case SDLK_4:
+					opt_halt += 16;
+					break;
+				case SDLK_5:
+					opt_halt += 32;
+					break;
+				case SDLK_6:
+					opt_halt += 64;
+					break;
+				case SDLK_7:
+					opt_halt += 128;
+					break;
+				case SDLK_8:
+					opt_halt += 256;
+					break;
+				case SDLK_9:
+					opt_halt += 512;
+					break;
+				case SDLK_0:
+					opt_halt += 1024;
+					break;
 				default:
 					break;
 				}
