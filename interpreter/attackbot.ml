@@ -23,26 +23,30 @@ let calculate_64_er_slot_value slot_to_attack =
 let move_callback context world proponent_move turn_stats privdata =
   try
     let rec state_machine state =
-      match privdata.pd_state with
+      match state with
 	| S_FIND_VICTIM limit ->
+	    Printf.fprintf stderr "move_callback: S_FIND_VICTIM: limit=%i\n" limit;
 	    let victim = (last_alive_other_slot_custom world limit)
 	    in let job = write_number_to_slot (calculate_64_er_slot_value victim) 64
 	    in
 	      state_machine (S_APPLY_TURNS (job, S_MASR_LAUNCH_ATTACK victim))
-	| S_APPLY_TURNS (turns, new_state) -> begin
+	| S_APPLY_TURNS (turns, stored_state) -> begin
+	    Printf.fprintf stderr "move_callback: S_APPLY_TURNS: %i left\n" (List.length turns);
 	    match turns with
-	      | turn :: [] -> turn, new_state
-	      | turn :: rest -> turn, S_APPLY_TURNS (rest, new_state)
-	      | [] -> state_machine new_state
+	      | turn :: [] -> turn, stored_state
+	      | turn :: rest -> turn, S_APPLY_TURNS (rest, stored_state)
+	      | [] -> state_machine stored_state
 	  end
 	| S_MASR_LAUNCH_ATTACK victim ->
+	    Printf.fprintf stderr "move_callback: S_MASR_LAUNCH_ATTACK: attacking %i\n" victim;
 	    let vicvit, _ = context.read_other_vit victim world
 	    in
 	      if vicvit > 0 then
-		Right (victim, I), S_MASR_LAUNCH_ATTACK victim
+		Right (65, I), S_MASR_LAUNCH_ATTACK victim
 	      else
 		state_machine (S_MASR_FIND_NEXT_VICTIM victim)
 	| S_MASR_FIND_NEXT_VICTIM old_victim ->
+	    Printf.fprintf stderr "move_callback: S_MASR_FIND_NEXT_VICTIM: old_victim=%i\n" old_victim;
 	    let next_victim = last_alive_other_slot world
 	    in let possible_job = write_number_to_slot (calculate_64_er_slot_value next_victim) 64
 	    in
