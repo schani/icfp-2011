@@ -2,17 +2,18 @@
   (:use matchure
 	clojure.set
 	clojure.contrib.def
+	clojure.contrib.logging
 	clojure.contrib.str-utils))
 
-(if-match [[[?a ?b] & ?rest] [[1 2] 3 4]]
-	  [a b rest])
+(defn realseq? [x]
+  (or (seq? x) (vector? x)))
 
 (defmacro match-lambda [expr &{:keys [lambda apply primitive]}]
   (if-match [[[?M ?N] & ?apply-exprs] apply]
 	    (if-match [[[?x ?y] & ?lambda-exprs] lambda]
 		      (if-match [[?p & ?primitive-exprs] primitive]
 				`(let [expr# ~expr]
-				   (if (seq? expr#)
+				   (if (realseq? expr#)
 				     (if (= (first expr#) :fn)
 				       (do
 					 (assert (= (count expr#) 3))
@@ -33,26 +34,6 @@
 		      (throw (Exception. (str "Invalid lambda argument " lambda))))
 	    (throw (Exception. (str "Invalid apply argument " apply)))))
 
-(defn compile-a [x expr]
-  (cond-match expr
-
-	      [?M ?N]
-	      (list (list :S (compile-a x M)) (compile-a x N))
-
-	      ?y
-	      (if (= x y)
-		:I
-		(list :K y))))
-
-(defn compile-lambda [expr]
-  (match-lambda expr
-		:lambda ([x M]
-			   (compile-a x (compile-lambda M)))
-		:apply ([M N]
-			  (list (compile-lambda M) (compile-lambda N)))
-		:primitive (x
-			    x)))
-
 (defn- bound-in? [sym expr]
   (match-lambda expr
 		:lambda ([x M]
@@ -65,27 +46,30 @@
 		:primitive (x
 			    (= sym x))))
 
-(defn pre-optimize-lambda [expr]
+(defn compile-a [x expr]
+  (if (bound-in? x expr)
+    (cond-match expr
+
+		[?M ?N]
+		(list (list :S (compile-a x M)) (compile-a x N))
+
+		?y
+		(do
+		  (assert (= x y))
+		  :I))
+    (list :K expr)))
+
+(defn compile-lambda [expr]
   (match-lambda expr
 		:lambda ([x M]
-			   (if (bound-in? x M)
-			     (list :fn [x] (pre-optimize-lambda M))
-			     (match-lambda M
-					   :lambda ([y N]
-						      (list :K (pre-optimize-lambda M)))
-					   :apply ([O P]
-						     (list (list :S
-								 (list :K (pre-optimize-lambda O)))
-							   (list :K (pre-optimize-lambda P))))
-					   :primitive (y
-						       expr))))
+			   (compile-a x (compile-lambda M)))
 		:apply ([M N]
-			  (list (pre-optimize-lambda M) (pre-optimize-lambda N)))
+			  (list (compile-lambda M) (compile-lambda N)))
 		:primitive (x
 			    x)))
 
 (defn optimize-ski [ski]
-  (if (seq? ski)
+  (if (realseq? ski)
     (let [ski (map optimize-ski ski)]
       (or
        (if-match [[[?S [?K ?L]] [?M ?x]] ski]
@@ -94,6 +78,14 @@
        (if-match [[[?S [?K ?T]] [?L [?M ?U]]] ski]
 		 (if (= [S T U K L M] [:S :S :S :K :K :K])
 		   `(:K (:S (:K :S)))))
+       (if-match [[[
+		    [?S1 [?K ?S2]]
+		    [?S3 ?x]]
+		   ?y] ski]
+		 (if (= [S1 S2 S3 K] [:S :S :S :K])
+		   (do
+		     (info "optimize")
+		     `(:S ((:S ~x) ~y)))))
        ski))
     ski))
 
@@ -213,3 +205,7 @@
 			       (str (command-str "echo " command)
 				    "read ; read ; read\n"))
 			     commands)))))
+
+(defn command-script [filename commands]
+  (spit filename
+	(apply str (map #(command-str "" %) commands))))

@@ -1,6 +1,8 @@
 (ns fikdm.compiler.programs
   (:use clojure.contrib.def
-	fikdm.compiler.core))
+	clojure.set
+	fikdm.compiler.core
+	fikdm.compiler.eval))
 
 (defvar *SII* (compile-lambda '(:fn [x] (x x))))
 
@@ -69,19 +71,8 @@
 		       (make-se-combine-fn se-fn acc)))))
       ~side-effect-fn)))
 
-(defn make-help-attack-loop [help-field help-strength attack-field attack-strength]
-  (make-loop (make-help-attack help-field help-strength attack-field attack-strength)))
-
-(defn make-dec-loop [slot]
-  (make-loop
-   `((:dec ~slot) ((:dec ~slot) ((:dec ~slot) ((:dec ~slot) (:dec ~slot)))))))
-
-(defn make-help-attack-self-return [n help-field help-strength attack-field attack-strength]
-  (let [help-attack (make-help-attack 0 8192 0 768)]
-    (make-apply-self-return (make-repeat-effect n help-attack))))
-
 (defn lambda->ski [program]
-  (optimize-ski (compile-lambda (pre-optimize-lambda program))))
+  (fixpoint optimize-ski 10 (compile-lambda program)))
 
 (defvar *regs* #{1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27})
 
