@@ -131,7 +131,9 @@
 (defn- alloc-slot [free]
   (let [slot (first free)]
     (assert (number? slot))
-    [slot (difference free #{slot})]))
+    (do
+      (info (str "alloced slot " slot))
+      [slot (difference free #{slot})])))
 
 (defn- primitive-card? [x]
   (cond (keyword? x)
@@ -216,22 +218,27 @@
 
 (defn- generate [ski s free]
   (assert (not (contains? free s)))
-  (if-let [slot (get-from-field? ski)]
-    (info (str "already in " slot ": " ski)))
+  ;;(if-let [slot (get-from-field? ski)]
+  ;;  (info (str "already in " slot ": " ski)))
   (let [gen (if-let [simple (gen-simple? ski s)]
 	      simple
 	      (cond-match ski
 
 			  [?x [?M ?N]]
-			  (let [x-code (generate x s free)]
-			    (if-lets [m-card (primitive-card? M)
-				      n-card (primitive-card? N)]
-				     (generate-mn s x-code [] m-card n-card)
-				     (if-let [y-simple (gen-simple? [M N] 0)]
-				       (do
-					 (set-field! 0 [M N])
-					 (generate-mn s x-code y-simple :get :zero))
-				       (generate-complex s free x-code [M N]))))
+			  (if-let [x-card (primitive-card? x)]
+			    (concat (generate [M N] s free)
+				    [[:left s x-card]])
+			    (let [x-code (generate x s free)]
+			      (if-lets [m-card (primitive-card? M)
+					n-card (primitive-card? N)]
+				       (generate-mn s x-code [] m-card n-card)
+				       (if-let [y-simple (gen-simple? [M N] 0)]
+					 (do
+					   (set-field! 0 [M N])
+					   (generate-mn s x-code y-simple :get :zero))
+					 (do
+					   (info (str "complex " x " ||||||||||||||| " [M N]))
+					   (generate-complex s free x-code [M N]))))))
 
 			  [?x ?y]
 			  (generate-complex s free (generate x s free) y)
