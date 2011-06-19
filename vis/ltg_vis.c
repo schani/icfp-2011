@@ -360,6 +360,7 @@ out_err:
 TTF_Font *small_fnt = NULL;
 TTF_Font *stats_fnt = NULL;
 TTF_Font *score_fnt = NULL;
+TTF_Font *win_fnt = NULL;
 
 
 SDL_Surface *logo = NULL;
@@ -369,6 +370,12 @@ int play_id = 0;
 int card_id = 0;
 int slot_id = 0;
 int vitality = 0;
+
+int player_win = 0;
+
+#define	PLAYER_WIN_A	1
+#define	PLAYER_WIN_B	2
+#define	PLAYER_DRAW	3
 
 
 void	vis_draw_grid(SDL_Surface *dst, unsigned slotw, unsigned sloth)
@@ -655,7 +662,34 @@ void	vis_draw_score(SDL_Surface *dst)
 }
 
 
+void	vis_draw_win(SDL_Surface *dst0, SDL_Surface *dst1)
+{
+	char *win_txt = "WIN!";
+	char *lose_txt = "LOSE!";
+	char *draw_txt = "DRAW!";
 
+	switch (player_win) {
+	case PLAYER_WIN_A:
+		vis_draw_string_center_shaded(dst0, PLAY_WIDTH / 2, PLAY_HEIGHT / 2,
+			win_fnt, win_txt, 0, 255, 0, 0, 0, 0);
+		vis_draw_string_center_shaded(dst1, PLAY_WIDTH / 2, PLAY_HEIGHT / 2,
+			win_fnt, lose_txt, 255, 0, 0, 0, 0, 0);
+		break;
+	case PLAYER_WIN_B:
+		vis_draw_string_center_shaded(dst1, PLAY_WIDTH / 2, PLAY_HEIGHT / 2,
+			win_fnt, win_txt, 0, 255, 0, 0, 0, 0);
+		vis_draw_string_center_shaded(dst0, PLAY_WIDTH / 2, PLAY_HEIGHT / 2,
+			win_fnt, lose_txt, 255, 0, 0, 0, 0, 0);
+		break;
+	
+	case PLAYER_DRAW:
+		vis_draw_string_center_shaded(dst0, PLAY_WIDTH / 2, PLAY_HEIGHT / 2,
+			win_fnt, draw_txt, 255, 255, 0, 0, 0, 0);
+		vis_draw_string_center_shaded(dst1, PLAY_WIDTH / 2, PLAY_HEIGHT / 2,
+			win_fnt, draw_txt, 255, 255, 0, 0, 0, 0);
+		break;
+	} 
+}
 
 
 
@@ -786,6 +820,39 @@ bool	parse_exception(char *line)
 	return true;
 }
 
+bool	parse_win(char *line)
+{
+	int n;
+	unsigned score0, score1;
+
+	n = sscanf(line, "!! player %d wins by %d:%d after turn %ld",
+		&play_id, &score0, &score1, &turn);
+	if (n == 4) {
+		printf("!! player %c wins by %d:%d after turn %ld\n",
+			play_id ? 'B' : 'A',
+			score0, score1, turn);
+		player_win = play_id ? PLAYER_WIN_B : PLAYER_WIN_A;
+		return true;
+	}
+	n = sscanf(line, "!! draw by %d:%d after turn %ld",
+		&score0, &score1, &turn);
+	if (n == 3) {
+		printf("!! draw by %d:%d after turn %ld\n",
+			score0, score1, turn);
+		player_win = PLAYER_DRAW;
+		return true;
+	}
+	n = sscanf(line, "!! player %d loses by invalid output at turn %ld",
+		&play_id, &turn);
+	if (n == 2) {
+		printf("!! player %c loses by invalid output at turn %ld\n",
+			play_id ? 'B' : 'A', turn);
+		player_win = play_id ? PLAYER_WIN_B : PLAYER_WIN_A;
+		return true;
+	}
+	return true;
+}
+
 enum	_state {
 	ST_INIT	= 0,
 	ST_SCAN	= 1,
@@ -829,6 +896,10 @@ bool	parse_input(char *line)
 		ret = parse_slot_reset(line);
 		break;
 
+	case '!':	/* win */
+		ret = parse_win(line);
+		break;
+
 	case '0':
 	case '1':
 	case '2':
@@ -842,6 +913,9 @@ bool	parse_input(char *line)
 		ret = parse_slot(line);
 		break;
 
+	case '%':	/* debug info */
+		fprintf(stderr, "%s", line);
+		break;
 	case 'c':	/* card ignored */
 	default:	/* ignored */
 		break;
@@ -944,12 +1018,20 @@ int	main(int argc, char *argv[])
 		exit(5);
 	}
 
+	win_fnt = TTF_OpenFont("/icfpnfs/BERTL/vis_win.ttf", 64);
+	if (!win_fnt) {
+		fprintf(stderr,
+			"Unable to open font: %s\n",
+			SDL_GetError());
+		exit(6);
+	}
+
 	logo = SDL_DisplayFormat(SDL_LoadBMP("/icfpnfs/BERTL/vis_logo.bmp"));
 	if (!logo) {
 		fprintf(stderr,
 			"Unable to open image: %s\n",
 			SDL_GetError());
-		exit(6);
+		exit(7);
 	}
 
 	vis_init_slots(player[0]);
@@ -995,6 +1077,8 @@ int	main(int argc, char *argv[])
 
 		vis_calc_stats(&player_stat[1], player[1]);
 		vis_draw_slots(play1, player[1]);
+
+		vis_draw_win(play0, play1);
 
 		SDL_Rect psrcRect = { 0, 0, PLAY_WIDTH, PLAY_HEIGHT };
 		SDL_Rect play0Rect = { 10, 10, PLAY_WIDTH, PLAY_HEIGHT };
