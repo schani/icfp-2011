@@ -39,8 +39,7 @@
     `(~*SII*
       (:fn [~f]
 	   ~(make-se-combine-fn side-effect-fn
-				`(:fn [d2#]
-				      (~f ~f)))))))
+				(make-se-fn (list f f)))))))
 
 (defn make-help-attack-fn [help-field help-strength attack-field attack-strength]
   (let [attack-fn (make-se-fn `(((:attack ~help-field) ~attack-field) ~attack-strength))
