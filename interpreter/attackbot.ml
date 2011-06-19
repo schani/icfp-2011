@@ -15,6 +15,8 @@ type state =
 
 type privdata = {
   pd_state: state;
+  during_load_slots: int list;
+  post_load_slots: int list;
 }
 
 let botdebug str =
@@ -29,14 +31,14 @@ let turns_masr4 = read_turns_from_file "functions/masr4.cmd"
 
 let move_callback context world proponent_move turn_stats privdata =
   try
-    let rec state_machine state =
+    let rec state_machine state privdata =
       match state with
 	| S_APPLY_TURNS (turns, stored_state) -> begin
 	    botdebug (sprintf "move_callback: S_APPLY_TURNS: %i left\n" (List.length turns));
 	    match turns with
-	      | turn :: [] -> turn, stored_state
-	      | turn :: rest -> turn, S_APPLY_TURNS (rest, stored_state)
-	      | [] -> state_machine stored_state
+	      | turn :: [] -> turn, stored_state, privdata
+	      | turn :: rest -> turn, S_APPLY_TURNS (rest, stored_state), privdata
+	      | [] -> state_machine stored_state privdata
 	  end
 	| S_MASR_FIND_VICTIM selector ->
 (*	    botdebug ("VORM DEPPATEN SCHASS\n");*)
@@ -45,7 +47,7 @@ let move_callback context world proponent_move turn_stats privdata =
 	      botdebug (sprintf "move_callback: S_MASR_FIND_VICTIM: %i\n" victim);
 	      let job = write_number_to_slot (calculate_64_er_slot_value victim) 64
 	      in
-		state_machine (S_APPLY_TURNS (job, S_MASR_LAUNCH_ATTACK victim))
+		state_machine (S_APPLY_TURNS (job, S_MASR_LAUNCH_ATTACK victim)) privdata
 	| S_MASR_LAUNCH_ATTACK victim ->
 	    botdebug (sprintf "move_callback: S_MASR_LAUNCH_ATTACK: attacking %i\n" victim);
 	    (
@@ -57,27 +59,27 @@ let move_callback context world proponent_move turn_stats privdata =
 	    let vicvit, _ = context.read_other_vit victim world
 	    in
 	      if vicvit > 0 then
-		Right (65, I), S_MASR_LAUNCH_ATTACK victim
+		Right (65, I), S_MASR_LAUNCH_ATTACK victim, privdata
 	      else
-		state_machine (S_MASR_FIND_NEXT_VICTIM victim)
+		state_machine (S_MASR_FIND_NEXT_VICTIM victim) privdata
 	| S_MASR_FIND_NEXT_VICTIM old_victim ->
 	    botdebug (sprintf "move_callback: S_MASR_FIND_NEXT_VICTIM: old_victim=%i\n" old_victim);
 	    if old_victim <= 0 then
-	      state_machine (S_MASR_FIND_VICTIM (function _ -> 255))
+	      state_machine (S_MASR_FIND_VICTIM (function _ -> 255)) privdata
 	    else
 	      let next_victim = old_victim - 1
 	      in let possible_job = write_number_to_slot (calculate_64_er_slot_value next_victim) 64
 	      in
 		if (List.length possible_job) < (old_victim - next_victim) then (* create new number *)
-		  state_machine (S_MASR_FIND_VICTIM (function _ -> next_victim))
+		  state_machine (S_MASR_FIND_VICTIM (function _ -> next_victim)) privdata
 		else
 		  let new_vic_fun = Left (Succ, 64)
 		  in let new_vic_funs = (Array.to_list (Array.make (old_victim - next_victim) new_vic_fun))
 		  in
-		    state_machine (S_APPLY_TURNS (new_vic_funs, S_MASR_LAUNCH_ATTACK next_victim))
-    in let move, next_state = state_machine privdata.pd_state
+		    state_machine (S_APPLY_TURNS (new_vic_funs, S_MASR_LAUNCH_ATTACK next_victim)) privdata
+    in let move, next_state, privdata = state_machine privdata.pd_state privdata
     in
-      move, { pd_state = next_state }
+      move, { privdata with pd_state = next_state }
   with
       Bot_error str ->
 	botdebug ("move_callback: Bot_error: %s\n" ^ str);
@@ -86,6 +88,8 @@ let move_callback context world proponent_move turn_stats privdata =
 let _ =
   let pd = {
     pd_state = S_APPLY_TURNS (turns_masr, S_MASR_FIND_VICTIM biggest_other_slot);
+    during_load_slots = [0; 1; 2; 3; 64; 65];
+    post_load_slots = [64; 65];
   }
   in
     bootloop move_callback pd
