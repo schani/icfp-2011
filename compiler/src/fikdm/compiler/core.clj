@@ -86,9 +86,9 @@
 		   (do
 		     (info "optimize")
 		     `(:S ((:S ~x) ~y)))))
-       (if-match [[[?S [?K1 ?K2]] ?I] ski]
-		 (if (= [S K1 K2 I] [:S :K :K :I])
-		   :K))
+       (if-match [[[?S [?K ?x]] ?I] ski]
+		 (if (= [S K I] [:S :K :I])
+		   x))
        (if-match [[?K ?I] ski]
 		 (if (= [K I] [:K :I])
 		   :put))

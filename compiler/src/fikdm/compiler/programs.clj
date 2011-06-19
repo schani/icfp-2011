@@ -33,12 +33,12 @@
 ;;     `(:fn [~f]
 ;;	   ~(make-se-combine-fn f f)))))
 
-(defn make-loop [side-effect]
-  `(((:S :I) :I)
-    (:fn [f#]
-	 ((:fn [y#]
-	    (((:S :I) :I) f#))
-	  ~side-effect))))
+(defn make-loop [side-effect-fn]
+  (let [f (gensym 'f)]
+    `(~*SII*
+      (:fn [~f]
+	   (~(make-se-fn (list *SII* f))
+	    (~side-effect-fn ~f))))))
 
 (defn make-apply-self-return [side-effect-fn]
   (let [f (gensym 'f)]
@@ -100,6 +100,33 @@
 		   (recur (list *se-twice* acc)
 			  (quot n 2)))))))))
 
+(defvar *masr* '(((:S :I) :I) ((:S (:K (:S (((:S :S) :I) (((:S :S) :I) (((:S :S) :I) (((:S :S) :I) ((:S ((:S (:K ((:help 0) 0))) (:K 8192))) ((:S ((:S (:K (:attack 0))) ((:S (:K :get)) (:K 64)))) (:K 768)))))))))) ((:S ((:S (:K :S)) :K)) :K))))
+
+(defvar *masr4* (lambda->ski
+		 ;;(make-get-apply-fn (make-param-help-attack-fn 0 8192 768) 64)
+
+		 (make-apply-self-return
+		  (let [d (gensym 'd)]
+		    `(:fn [~d]
+			  (
+			   (~(make-repeat-effect-fn 16)
+			    ((~*doubler*
+			      (~*doubler*
+			       ~(make-param-help-attack-fn 0 8192 768)))
+			     (~(make-get-fn 64) ~d)))
+
+			   ~d))))
+
+		 ;;(list (make-repeat-effect-fn 16)
+		 ;;	(make-se-pass-fn (make-get-fn 64)
+		 ;;			 (make-param-help-attack-fn 0 8192 768)))
+
+
+		 ))
+
+(defvar *kill-255* (lambda->ski
+		    (make-loop (make-help-attack-fn 0 8192 255 768))))
+
 (defvar *regs* #{1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27})
 
 (defn spit-echoer [filename program]
@@ -110,28 +137,7 @@
 
 (shell-script "/tmp/beidler.sh"
 	      (concat
-	       (generate (lambda->ski
-			  ;;(make-get-apply-fn (make-param-help-attack-fn 0 8192 768) 64)
-
-			  (make-apply-self-return
-			    (let [d (gensym 'd)]
-			         `(:fn [~d]
-				       (
-					(~(make-repeat-effect-fn 16)
-					 ((~*doubler*
-					   (~*doubler*
-					    ~(make-param-help-attack-fn 0 8192 768)))
-					  (~(make-get-fn 64) ~d)))
-
-					~d))))
-
-			  ;;(list (make-repeat-effect-fn 16)
-			;;	(make-se-pass-fn (make-get-fn 64)
-			;;			 (make-param-help-attack-fn 0 8192 768)))
-
-
-			  )
-
+	       (generate *masr4*
 			 65 *regs*)
 	       ;;[[:left -1 :init-255]]
 	       ;;(generate 255 64 nil)
@@ -148,9 +154,11 @@
 		]))))
 
 (command-script "/tmp/masr.cmd"
-		(generate
-		 '(((:S :I) :I) ((:S (:K (:S (((:S :S) :I) (((:S :S) :I) (((:S :S) :I) (((:S :S) :I) ((:S ((:S (:K ((:help 0) 0))) (:K 8192))) ((:S ((:S (:K (:attack 0))) ((:S (:K :get)) (:K 64)))) (:K 768)))))))))) ((:S ((:S (:K :S)) :K)) :K)))
-		 65 *regs*))
+		(generate *masr* 65 *regs*))
+(command-script "/tmp/masr4.cmd"
+		(generate *masr4* 65 *regs*))
+(command-script "/tmp/kill255.cmd"
+		(generate *kill-255* 65 *regs*))
 
 ;;(spit-echoer "/tmp/beidler.sh" (make-help-attack-loop 0 8192 0 768))
 ;;(spit-echoer "/tmp/beidler.sh" (make-dec-loop 0))
