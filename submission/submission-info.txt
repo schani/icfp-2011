@@ -10,7 +10,8 @@ DerProphet
 fikdm11@tilab.tuwien.ac.at
 
 === SUBMISSION-URL =====================================
-http://www.tilab.tuwien.ac.at/~heinz/fikdm11/xxx.tar.gz
+http://www.tilab.tuwien.ac.at/~heinz/fikdm11/fikdm20110620_014654.tar.gz
+1c95919d86666896a2f52232c3220f04bd8d89e139a8b991345eafe3b9ca2188e56cbb7a227c231c6880bff73cffb55efed97d257987b158a07bebae79562f2a
 
 === TEAM-MEMBER ========================================
 Mark Probst, LINBIT, Austria
@@ -22,6 +23,7 @@ Martin Biely, EPFL, Austria
 Matthias Fuegger, TU Wien, Austria
 Dieter Etz, Riedel Communications, Austria
 Lukas Spiegelhofer, UNI Wien, Austria
+Tatjana Svizensky, Oracle, Austria
 
 === LANGUAGE(S) ========================================
 OCaml, Clojure, C
