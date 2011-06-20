@@ -176,11 +176,13 @@
 
 (shell-script "/tmp/empkillah2.sh"
 	      (concat
-	       (repeat 200 [:left 0 :I])
-	       (apply concat (map #(ski->commands % 16)
-					  (map (fn [x]
-						 `(((:attack ~x) ~(- 255 8)) 5556))
-					       (range 4 256))))))
+	       ;;(repeat 200 [:left 0 :I])
+	       (apply concat (map (fn [i]
+				    (concat (ski->commands i 16)
+					    (repeat 150 [:left 0 :I])))
+				  (map (fn [x]
+					 `(((:attack ~x) ~(- 255 4)) 5556))
+				       (range 4 256))))))
 
 (defn masr-shell-script [filename counter-slot masr-slot]
   (shell-script filename
@@ -190,12 +192,12 @@
 			(apply concat (repeat 256
 					      [[:right masr-slot :I]
 					       [:left counter-slot :succ]])))))
-
-(shell-script "/tmp/empkillah3.sh"
-	      (let [r (java.util.Random.)
-		    rl (map (fn [x]
-			      [x (nth [0 2 4 8] (.nextInt r 4))])
-			    (range 0 125))]
+(shell-script "/tmp/empkillah4.sh"
+	      (let [perm (shuffle [0 2 4 8])
+		    r (java.util.Random.)
+		    rl (map list
+			    (range 0 125)
+			    (apply concat (repeat 100 perm)))]
 		(concat (repeat 100 [:left 0 :I])
 			(apply concat (map (fn [[i s]]
 					     (concat (ski->commands `(((:attack ~(+ 4 (* 2 i))) ~(- 255 s)) 6000) 16)
